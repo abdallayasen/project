@@ -1,0 +1,64 @@
+const express = require('express');
+const db = require('./firebaseConfig'); // Import Firebase configuration
+
+const router = express.Router();
+
+router.get('/getCustomer', async (req, res) => {
+  try {
+    console.log('Received request for /getCustomer');
+    const customersRef = db.ref('customers');
+    customersRef.once('value', (snapshot) => {
+      const customerData = snapshot.val();
+      console.log('Fetched customer data:', customerData);
+      res.json(customerData);
+    });
+  } catch (error) {
+    console.error('Error fetching customer data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/addCustomer', async (req, res) => {
+  try {
+    const { number, name, phone, postcode, email } = req.body;
+
+    if (!number || !name || !phone || !postcode || !email) {
+      return res.status(400).json({
+        status: "FAILED",
+        message: "Required fields are missing"
+      });
+    }
+
+    const customersRef = db.ref('customers');
+    customersRef.orderByChild('email').equalTo(email).once('value', (snapshot) => {
+      if (snapshot.exists()) {
+        return res.status(400).json({
+          status: "FAILED",
+          message: "Customer with this email already exists"
+        });
+      }
+
+      const newCustomerRef = customersRef.push();
+      const newCustomer = {
+        number,
+        name,
+        phone,
+        postcode,
+        email
+      };
+      newCustomerRef.set(newCustomer, (error) => {
+        if (error) {
+          console.error('Error adding customer:', error);
+          return res.status(500).json({ error: 'Internal server error' });
+        }
+        console.log('New customer added:', newCustomer);
+        res.status(201).json(newCustomer);
+      });
+    });
+  } catch (error) {
+    console.error('Error adding customer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+module.exports = router;
