@@ -1,4 +1,3 @@
-// server/api/userRoutes.js
 const express = require('express');
 const db = require('./firebaseConfig'); // Import the Firebase database instance
 
@@ -19,9 +18,9 @@ router.get('/getUser', async (req, res) => {
 
 router.post('/addUser', async (req, res) => {
   try {
-    const { email, password, userType } = req.body;
+    const { email, password, userType, name, passportID, phone, address, city, startDate, endDate } = req.body;
 
-    if (!email || !password || !userType) {
+    if (!email || !password || !userType || !name || !passportID || !phone || !address || !city || !startDate || !endDate) {
       return res.status(400).json({
         status: "FAILED",
         message: "Required fields are missing"
@@ -38,12 +37,12 @@ router.post('/addUser', async (req, res) => {
       }
 
       const newUserRef = usersRef.push();
-      newUserRef.set({ email, password, userType }, (error) => {
+      newUserRef.set({ email, password, userType, name, passportID, phone, address, city, startDate, endDate }, (error) => {
         if (error) {
           console.error('Error adding user:', error);
           return res.status(500).json({ error: 'Internal server error' });
         }
-        res.status(201).json({ id: newUserRef.key, email, password, userType });
+        res.status(201).json({ id: newUserRef.key, email, password, userType, name, passportID, phone, address, city, startDate, endDate });
       });
     });
   } catch (error) {

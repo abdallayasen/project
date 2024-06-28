@@ -1,3 +1,4 @@
+// server/api/customerRoutes.js
 const express = require('express');
 const db = require('./firebaseConfig'); // Import Firebase configuration
 
@@ -20,9 +21,9 @@ router.get('/getCustomer', async (req, res) => {
 
 router.post('/addCustomer', async (req, res) => {
   try {
-    const { number, name, phone, postcode, email } = req.body;
+    const { name, passportId, phone, email } = req.body;
 
-    if (!number || !name || !phone || !postcode || !email) {
+    if (!name || !passportId || !phone || !email) {
       return res.status(400).json({
         status: "FAILED",
         message: "Required fields are missing"
@@ -38,21 +39,24 @@ router.post('/addCustomer', async (req, res) => {
         });
       }
 
-      const newCustomerRef = customersRef.push();
-      const newCustomer = {
-        number,
-        name,
-        phone,
-        postcode,
-        email
-      };
-      newCustomerRef.set(newCustomer, (error) => {
-        if (error) {
-          console.error('Error adding customer:', error);
-          return res.status(500).json({ error: 'Internal server error' });
-        }
-        console.log('New customer added:', newCustomer);
-        res.status(201).json(newCustomer);
+      customersRef.once('value', (snapshot) => {
+        const customerCount = snapshot.numChildren() + 1;
+        const newCustomerRef = customersRef.push();
+        const newCustomer = {
+          number: customerCount,
+          name,
+          passportId,
+          phone,
+          email
+        };
+        newCustomerRef.set(newCustomer, (error) => {
+          if (error) {
+            console.error('Error adding customer:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+          }
+          console.log('New customer added:', newCustomer);
+          res.status(201).json(newCustomer);
+        });
       });
     });
   } catch (error) {

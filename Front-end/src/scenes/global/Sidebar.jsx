@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -18,9 +18,10 @@ import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import PreviewIcon from '@mui/icons-material/Preview';
-import { mockDataUsers } from "../../data/mockData"; 
 import WorkIcon from '@mui/icons-material/Work';
 import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
+import CommentIcon from '@mui/icons-material/Comment';
+import AddIcon from '@mui/icons-material/Add';
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -28,9 +29,7 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
   return (
     <MenuItem
       active={selected === title}
-      style={{
-        color: colors.grey[100],
-      }}
+      style={{ color: colors.grey[100] }}
       onClick={() => setSelected(title)}
       icon={icon}
     >
@@ -46,15 +45,12 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
 
-  
-
   return (
     <Box
       sx={{
-         height: '100vh', // to make the sidebar along all the page
+        height: '100vh',
         "& .pro-sidebar-inner": {
           background: `${colors.primary[400]} !important`,
-          
         },
         "& .pro-icon-wrapper": {
           backgroundColor: "transparent !important",
@@ -72,14 +68,10 @@ const Sidebar = () => {
     >
       <ProSidebar collapsed={isCollapsed}>
         <Menu iconShape="square">
-          {/* LOGO AND MENU ICON */}
           <MenuItem
             onClick={() => setIsCollapsed(!isCollapsed)}
             icon={isCollapsed ? <MenuOutlinedIcon /> : undefined}
-            style={{
-              margin: "10px 0 20px 0",
-              color: colors.grey[100],
-            }}
+            style={{ margin: "10px 0 20px 0", color: colors.grey[100] }}
           >
             {!isCollapsed && (
               <Box
@@ -105,7 +97,7 @@ const Sidebar = () => {
                   alt="profile-user"
                   width="100px"
                   height="100px"
-                  src={`../../assets/user.png`}
+                  src={`../../assets/icons/user2.png`}
                   style={{ cursor: "pointer", borderRadius: "50%" }}
                 />
               </Box>
@@ -116,24 +108,16 @@ const Sidebar = () => {
                   fontWeight="bold"
                   sx={{ m: "10px 0 0 0" }}
                 >
-                 Manger
+                  Manager
                 </Typography>
-                <Typography variant="h5" color={colors.greenAccent[500]}>
-                  currentUserLoggedIn
+                <Typography variant="h2" color={colors.greenAccent[500]}>
+                  yassen
                 </Typography>
               </Box>
             </Box>
           )}
-         
-          <Box paddingLeft={isCollapsed ? undefined : "10%"}>
-            <Item //here to route to another page
-              title="Home"
-              to="/"
-              icon={<HomeOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
 
+          <Box paddingLeft={isCollapsed ? undefined : "10%"}>
             <Typography
               variant="h6"
               color={colors.grey[300]}
@@ -142,29 +126,33 @@ const Sidebar = () => {
               Manage
             </Typography>
             <Item
-              title="Mywork" //observe both side order
-              to="/mywork"
+              title="Dashboard"
+              to="/manager/dashboard"
+              icon={<HomeOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="My Work"
+              to="/manager/mywork"
               icon={<WorkIcon />}
               selected={selected}
               setSelected={setSelected}
             />
-
             <Item
-              title="Work Management" //observe both side order
-              to="/workmanage"
+              title="Work Management"
+              to="/manager/work"
               icon={<PreviewIcon />}
               selected={selected}
               setSelected={setSelected}
             />
-
-<Item
-              title="All Work" //observe both side order
-              to="/allwork"
+            <Item
+              title="All Work"
+              to="/manager/allwork"
               icon={<WorkHistoryIcon />}
               selected={selected}
               setSelected={setSelected}
             />
-            
 
             <Typography
               variant="h6"
@@ -175,21 +163,26 @@ const Sidebar = () => {
             </Typography>
             <Item
               title="Employee Info"
-              to="/employee"
+              to="/manager/employee"
               icon={<PeopleOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Client Info"
-              to="/customer"
+              to="/manager/customer"
               icon={<ContactsOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
-
-
-
+            
+            <Item
+              title="Geography"
+              to="/manager/geography"
+              icon={<MapOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
 
             <Typography
               variant="h6"
@@ -199,9 +192,9 @@ const Sidebar = () => {
               Charts
             </Typography>
             <Item
-              title="Geography Chart"
-              to="/geography"
-              icon={<MapOutlinedIcon />}
+              title="Comments"
+              to="/manager/comments"
+              icon={<CommentIcon />}
               selected={selected}
               setSelected={setSelected}
             />
@@ -213,23 +206,21 @@ const Sidebar = () => {
             >
               Tools
             </Typography>
-
             <Item
               title="Calendar"
-              to="/calendar"
+              to="/manager/calendar"
               icon={<CalendarTodayOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
-
             <Item
-              title="Comments"
-              to="/comments"
-              icon={<CalendarTodayOutlinedIcon />}
+              title="Sign Up"
+              to="/signup"
+              icon={<AddIcon />}
               selected={selected}
               setSelected={setSelected}
             />
-
+            
           </Box>
         </Menu>
       </ProSidebar>

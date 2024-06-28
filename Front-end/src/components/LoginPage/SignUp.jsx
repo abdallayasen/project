@@ -3,10 +3,17 @@ import axios from 'axios';
 import './SignUp.css';
 
 const SignUp = ({ onClose }) => {
+  const [name, setName] = useState('');
+  const [passportID, setPassportID] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('');
   const [confirmationPassword, setConfirmationPassword] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleUserTypeChange = (e) => {
@@ -16,7 +23,7 @@ const SignUp = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email || !password || !userType) {
+    if (!email || !password || !userType || !name || !passportID || !phone) {
       setErrorMessage('Please fill in all fields.');
       return;
     }
@@ -36,18 +43,42 @@ const SignUp = ({ onClose }) => {
     }
 
     try {
-      const response = await axios.post('http://localhost:8000/addUser', {
-        email,
-        password,
-        userType,
-      });
-
-      console.log('User added:', response.data);
-      alert('User successfully added!');
+      if (userType === 'customer') {
+        const response = await axios.post('http://localhost:8000/addCustomer', {
+          name,
+          passportID,
+          phone,
+          email,
+        });
+        console.log('Customer added:', response.data);
+        alert('Customer successfully added!');
+      } else {
+        const response = await axios.post('http://localhost:8000/addUser', {
+          name,
+          passportID,
+          phone,
+          email,
+          password,
+          userType,
+          address,
+          city,
+          startDate,
+          endDate,
+        });
+        console.log('User added:', response.data);
+        alert('User successfully added!');
+      }
+      setName('');
+      setPassportID('');
+      setPhone('');
       setEmail('');
       setPassword('');
       setUserType('');
       setConfirmationPassword('');
+      setAddress('');
+      setCity('');
+      setStartDate('');
+      setEndDate('');
       setErrorMessage('');
       onClose();
     } catch (error) {
@@ -63,6 +94,33 @@ const SignUp = ({ onClose }) => {
         <h2>Sign Up</h2>
         {errorMessage && <div className="error-message">{errorMessage}</div>}
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Name:</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Passport ID:</label>
+            <input
+              type="text"
+              value={passportID}
+              onChange={(e) => setPassportID(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Phone Number:</label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
+          </div>
           <div className="form-group">
             <label>Email:</label>
             <input
@@ -92,15 +150,53 @@ const SignUp = ({ onClose }) => {
             </select>
           </div>
           {(userType === 'manager' || userType === 'employee_office' || userType === 'field_worker') && (
-            <div className="form-group">
-              <label>Confirmation Password:</label>
-              <input
-                type="password"
-                value={confirmationPassword}
-                onChange={(e) => setConfirmationPassword(e.target.value)}
-                required
-              />
-            </div>
+            <>
+              <div className="form-group">
+                <label>Confirmation Password:</label>
+                <input
+                  type="password"
+                  value={confirmationPassword}
+                  onChange={(e) => setConfirmationPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Address:</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>City:</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Start Date:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>End Date:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  required
+                />
+              </div>
+            </>
           )}
           <button type="submit">OK</button>
         </form>

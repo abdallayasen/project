@@ -1,14 +1,13 @@
 import * as React from 'react';
 import { styled } from '@mui/material/styles';
-import { Box, IconButton, Card, CardHeader, CardMedia, CardContent, CardActions, Collapse, Avatar, Typography, TextField, Button } from '@mui/material';
+import { Box, IconButton, Card, CardHeader, CardContent, CardActions, Collapse, Avatar, Typography, TextField, Button } from '@mui/material';
 import { red } from '@mui/material/colors';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import ReplyIcon from '@mui/icons-material/Reply';
-import { tokens } from "../../theme";
-import { useTheme } from "@mui/material";
-import AddPost from '../../components/AddPost';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import { tokens } from '../../theme';
+import { useTheme } from '@mui/material';
+import AddPost from '../../components/AddPost';
 
 const ExpandMore = styled((props) => {
     const theme = useTheme();
