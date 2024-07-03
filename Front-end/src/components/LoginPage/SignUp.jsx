@@ -4,12 +4,12 @@ import './SignUp.css';
 
 const SignUp = ({ onClose }) => {
   const [name, setName] = useState('');
-  const [passportID, setPassportID] = useState('');
+  const [passportId, setPassportId] = useState(''); // Changed to passportId
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState('');
   const [confirmationPassword, setConfirmationPassword] = useState('');
+  const [userType, setUserType] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -23,7 +23,7 @@ const SignUp = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email || !password || !userType || !name || !passportID || !phone) {
+    if (!email || !password || !confirmationPassword || !userType || !name || !passportId || !phone) {
       setErrorMessage('Please fill in all fields.');
       return;
     }
@@ -33,12 +33,8 @@ const SignUp = ({ onClose }) => {
       return;
     }
 
-    if (
-      (userType === 'manager' && confirmationPassword !== '0000') ||
-      (userType === 'employee_office' && confirmationPassword !== '1111') ||
-      (userType === 'field_worker' && confirmationPassword !== '2222')
-    ) {
-      setErrorMessage('Incorrect confirmation password. Please try again.');
+    if (password !== confirmationPassword) {
+      setErrorMessage('Passwords do not match. Please try again.');
       return;
     }
 
@@ -46,16 +42,18 @@ const SignUp = ({ onClose }) => {
       if (userType === 'customer') {
         const response = await axios.post('http://localhost:8000/addCustomer', {
           name,
-          passportID,
+          passportId, // Changed to passportId
           phone,
           email,
+          password,
+          confirmationPassword,
         });
         console.log('Customer added:', response.data);
         alert('Customer successfully added!');
       } else {
         const response = await axios.post('http://localhost:8000/addUser', {
           name,
-          passportID,
+          passportId, // Changed to passportId
           phone,
           email,
           password,
@@ -69,12 +67,12 @@ const SignUp = ({ onClose }) => {
         alert('User successfully added!');
       }
       setName('');
-      setPassportID('');
+      setPassportId(''); // Changed to passportId
       setPhone('');
       setEmail('');
       setPassword('');
-      setUserType('');
       setConfirmationPassword('');
+      setUserType('');
       setAddress('');
       setCity('');
       setStartDate('');
@@ -107,8 +105,8 @@ const SignUp = ({ onClose }) => {
             <label>Passport ID:</label>
             <input
               type="text"
-              value={passportID}
-              onChange={(e) => setPassportID(e.target.value)}
+              value={passportId} // Changed to passportId
+              onChange={(e) => setPassportId(e.target.value)} // Changed to passportId
               required
             />
           </div>
@@ -140,6 +138,15 @@ const SignUp = ({ onClose }) => {
             />
           </div>
           <div className="form-group">
+            <label>Confirm Password:</label>
+            <input
+              type="password"
+              value={confirmationPassword}
+              onChange={(e) => setConfirmationPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
             <label>User Type:</label>
             <select value={userType} onChange={handleUserTypeChange} required>
               <option value="">Select User Type</option>
@@ -151,15 +158,6 @@ const SignUp = ({ onClose }) => {
           </div>
           {(userType === 'manager' || userType === 'employee_office' || userType === 'field_worker') && (
             <>
-              <div className="form-group">
-                <label>Confirmation Password:</label>
-                <input
-                  type="password"
-                  value={confirmationPassword}
-                  onChange={(e) => setConfirmationPassword(e.target.value)}
-                  required
-                />
-              </div>
               <div className="form-group">
                 <label>Address:</label>
                 <input

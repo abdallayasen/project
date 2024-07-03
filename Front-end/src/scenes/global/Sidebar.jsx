@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -22,6 +22,7 @@ import WorkIcon from '@mui/icons-material/Work';
 import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import CommentIcon from '@mui/icons-material/Comment';
 import AddIcon from '@mui/icons-material/Add';
+import { UserContext } from '../../context/UserContext'; // Import UserContext
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -44,6 +45,7 @@ const Sidebar = () => {
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
+  const { user } = useContext(UserContext); // Use UserContext
 
   return (
     <Box
@@ -108,10 +110,10 @@ const Sidebar = () => {
                   fontWeight="bold"
                   sx={{ m: "10px 0 0 0" }}
                 >
-                  Manager
+                  {user?.userType.charAt(0).toUpperCase() + user?.userType.slice(1)}
                 </Typography>
                 <Typography variant="h2" color={colors.greenAccent[500]}>
-                  yassen
+                  {user?.name}
                 </Typography>
               </Box>
             </Box>
@@ -161,21 +163,31 @@ const Sidebar = () => {
             >
               Information
             </Typography>
-            <Item
-              title="Employee Info"
-              to="/manager/employee"
-              icon={<PeopleOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            <Item
-              title="Client Info"
-              to="/manager/customer"
-              icon={<ContactsOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            
+            {user?.userType === 'manager' && (
+              <>
+                <Item
+                  title="Orders Page"
+                  to="/manager/orders"
+                  icon={<ContactsOutlinedIcon />}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
+                <Item
+                  title="Employee Info"
+                  to="/manager/employee"
+                  icon={<PeopleOutlinedIcon />}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
+                <Item
+                  title="Client Info"
+                  to="/manager/customer"
+                  icon={<ContactsOutlinedIcon />}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
+              </>
+            )}
             <Item
               title="Geography"
               to="/manager/geography"
@@ -213,14 +225,24 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
-            <Item
-              title="Sign Up"
-              to="/signup"
-              icon={<AddIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            
+            {user?.userType === 'manager' && (
+              <>
+                <Item
+                  title="Add Order"
+                  to="/manager/add-order"
+                  icon={<AddIcon />}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
+                <Item
+                  title="Sign Up"
+                  to="/signup"
+                  icon={<AddIcon />}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
+              </>
+            )}
           </Box>
         </Menu>
       </ProSidebar>

@@ -1,4 +1,3 @@
-// server/api/customerRoutes.js
 const express = require('express');
 const db = require('./firebaseConfig'); // Import Firebase configuration
 
@@ -21,12 +20,19 @@ router.get('/getCustomer', async (req, res) => {
 
 router.post('/addCustomer', async (req, res) => {
   try {
-    const { name, passportId, phone, email } = req.body;
+    const { name, passportId, phone, email, password, confirmationPassword } = req.body;
 
-    if (!name || !passportId || !phone || !email) {
+    if (!name || !passportId || !phone || !email || !password || !confirmationPassword) {
       return res.status(400).json({
         status: "FAILED",
         message: "Required fields are missing"
+      });
+    }
+
+    if (password !== confirmationPassword) {
+      return res.status(400).json({
+        status: "FAILED",
+        message: "Passwords do not match"
       });
     }
 
@@ -47,7 +53,9 @@ router.post('/addCustomer', async (req, res) => {
           name,
           passportId,
           phone,
-          email
+          email,
+          password,
+          userType: 'customer' // Add the userType field here
         };
         newCustomerRef.set(newCustomer, (error) => {
           if (error) {

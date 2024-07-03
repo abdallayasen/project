@@ -7,16 +7,13 @@ import Sidebar from '../../src/scenes/global/Sidebar';
 import Dashboard from '../../src/scenes/dashboard';
 import Customer from '../../src/scenes/customer';
 import Employee from '../../src/scenes/employee';
-import Work from '../../src/scenes/work';
 import Geography from '../../src/scenes/geography';
 import Mywork from '../../src/scenes/mywork';
 import Allwork from '../../src/scenes/allwork';
 import Comments from '../../src/scenes/comments';
 import ClientInfo from '../../src/scenes/customer';
-import OrdersInfo from '../../src/scenes/orders/OrdersInfo';
-import AddOrder from '../../src/scenes/orders/AddOrder';
 
-const ManagerMainPage = () => {
+const CustomerMainPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
@@ -39,9 +36,6 @@ const ManagerMainPage = () => {
             <Route path="mywork" element={<Mywork />} />
             <Route path="allwork" element={<Allwork />} />
             <Route path="comments" element={<Comments />} />
-            <Route path="work" element={<Work />} />
-            <Route path="orders" element={<OrdersInfo />} />
-            <Route path="ordersadd" element={<AddOrder />} />
             <Route path="/" element={<Navigate to="dashboard" />} />
             <Route path="client-info" element={<ClientInfo />} />
           </Routes>
@@ -51,4 +45,4 @@ const ManagerMainPage = () => {
   );
 };
 
-export default ManagerMainPage;
+export default CustomerMainPage;

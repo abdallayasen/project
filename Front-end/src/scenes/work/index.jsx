@@ -1,11 +1,13 @@
+// src/scenes/work/index.jsx
+import React, { useState, useEffect, useContext } from 'react';
 import { Box, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
-import { mockDataWorkStatus } from "../../data/mockData";
+import { ref, onValue, update } from 'firebase/database';
+import { db } from '../../firebase';
 import Header from "../../components/Header";
 import { useTheme } from "@mui/material";
 import Button from '@mui/material/Button';
-import { useState } from "react";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FileUploadIcon from '@mui/icons-material/CloudUpload';
@@ -14,46 +16,14 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ImageIcon from '@mui/icons-material/Image';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CommentIcon from '@mui/icons-material/Comment';
-
-const StatusButton = ({ initialStatus }) => {
-  const statuses = ["Success", "Pending", "Processing", "Refunded"];
-  const [status, setStatus] = useState(initialStatus);
-
-  const handleClick = () => {
-    const currentIndex = statuses.indexOf(status);
-    const nextIndex = (currentIndex + 1) % statuses.length;
-    const newStatus = statuses[nextIndex];
-    setStatus(newStatus);
-  };
-
-  const getButtonStyle = (status) => {
-    switch (status) {
-      case "Success":
-        return { backgroundColor: '#4caf50' };
-      case "Pending":
-        return { backgroundColor: '#ff5722' };
-      case "Processing":
-        return { backgroundColor: '#29B6F6' };
-      default:
-        return { backgroundColor: '#D9250F' };
-    }
-  };
-
-  return (
-    <Button
-      variant="contained"
-      style={getButtonStyle(status)}
-      onClick={handleClick}
-    >
-      {status}
-    </Button>
-  );
-};
+import { UserContext } from "../../context/UserContext";
+import StatusButton from '../../components/StatusButton'; // Ensure correct path
 
 const Work = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [rows, setRows] = useState(mockDataWorkStatus);
+  const [rows, setRows] = useState([]);
+  const { user } = useContext(UserContext);
   const [editRowsModel, setEditRowsModel] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -61,6 +31,46 @@ const Work = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingRow, setPendingRow] = useState(null);
   const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+
+  useEffect(() => {
+    const fetchData = () => {
+      const ordersRef = ref(db, 'orders/');
+      onValue(ordersRef, (snapshot) => {
+        const data = snapshot.val();
+        const orderList = data ? Object.keys(data).map((key) => ({
+          id: key,
+          ...data[key]
+        })) : [];
+        setRows(orderList);
+      });
+    };
+
+    fetchData();
+  }, []);
+
+  const updateOrderStatus = (orderId, type, newStatus) => {
+    const orderRef = ref(db, `orders/${orderId}`);
+    update(orderRef, { [type]: newStatus }).then(() => {
+      setRows((prevRows) => prevRows.map((row) => {
+        if (row.id === orderId) {
+          return { ...row, [type]: newStatus };
+        }
+        return row;
+      }));
+      setSnackbarMessage(`Order ${orderId} ${type} updated to ${newStatus}`);
+      setSnackbarOpen(true);
+    }).catch((error) => {
+      setSnackbarMessage(`Failed to update order ${orderId}: ${error.message}`);
+      setSnackbarOpen(true);
+    });
+  };
+
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
 
   const handleEditRowsModelChange = (model) => {
     setEditRowsModel(model);
@@ -96,15 +106,9 @@ const Work = () => {
   };
 
   const handleProcessRowUpdate = (newRow) => {
-    handleEditDialogOpen(newRow);
+    const updatedRows = rows.map((row) => (row.id === newRow.id ? newRow : row));
+    setRows(updatedRows);
     return newRow;
-  };
-
-  const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setSnackbarOpen(false);
   };
 
   const handleConfirmDelete = () => {
@@ -165,16 +169,16 @@ const Work = () => {
   };
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 0.5, editable: false },
+    { field: "id", headerName: "Serial Number", flex: 0.5, editable: false },
     {
-      field: "customername",
+      field: "customerName",
       headerName: "Customer Name",
       flex: 1,
       cellClassName: "name-column--cell",
       editable: true,
     },
     {
-      field: "workname",
+      field: "orderType",
       headerName: "Work Name",
       flex: 1,
       editable: true,
@@ -189,24 +193,38 @@ const Work = () => {
       field: "fieldStatus",
       headerName: "Field Status",
       flex: 1,
-      renderCell: (params) => <StatusButton initialStatus={params.value} />,
+      renderCell: (params) => (
+        <StatusButton
+          initialStatus={params.value}
+          type="fieldStatus"
+          orderId={params.row.id}
+          updateOrderStatus={updateOrderStatus}
+        />
+      ),
       editable: false,
     },
     {
       field: "officeStatus",
       headerName: "Office Status",
       flex: 1,
-      renderCell: (params) => <StatusButton initialStatus={params.value} />,
+      renderCell: (params) => (
+        <StatusButton
+          initialStatus={params.value}
+          type="officeStatus"
+          orderId={params.row.id}
+          updateOrderStatus={updateOrderStatus}
+        />
+      ),
       editable: false,
     },
     {
-      field: "fieldEmployee",
+      field: "employeeFieldName",
       headerName: "Field Employee",
       flex: 1,
       editable: true,
     },
     {
-      field: "officeEmployee",
+      field: "employeeOfficeName",
       headerName: "Office Employee",
       flex: 1,
       editable: true,

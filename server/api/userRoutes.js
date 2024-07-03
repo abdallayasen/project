@@ -11,16 +11,15 @@ router.get('/getUser', async (req, res) => {
       res.json(usersData);
     });
   } catch (error) {
-    console.error('Error fetching user data:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 router.post('/addUser', async (req, res) => {
   try {
-    const { email, password, userType, name, passportID, phone, address, city, startDate, endDate } = req.body;
+    const { name, passportId, phone, email, password, userType, address, city, startDate, endDate } = req.body;
 
-    if (!email || !password || !userType || !name || !passportID || !phone || !address || !city || !startDate || !endDate) {
+    if (!email || !password || !userType || !name || !passportId || !phone) {
       return res.status(400).json({
         status: "FAILED",
         message: "Required fields are missing"
@@ -37,16 +36,25 @@ router.post('/addUser', async (req, res) => {
       }
 
       const newUserRef = usersRef.push();
-      newUserRef.set({ email, password, userType, name, passportID, phone, address, city, startDate, endDate }, (error) => {
+      newUserRef.set({
+        name,
+        passportId,
+        phone,
+        email,
+        password,
+        userType,
+        address,
+        city,
+        startDate,
+        endDate
+      }, (error) => {
         if (error) {
-          console.error('Error adding user:', error);
           return res.status(500).json({ error: 'Internal server error' });
         }
-        res.status(201).json({ id: newUserRef.key, email, password, userType, name, passportID, phone, address, city, startDate, endDate });
+        res.status(201).json({ id: newUserRef.key, email, password, userType });
       });
     });
   } catch (error) {
-    console.error('Error adding user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -85,7 +93,6 @@ router.post('/login', async (req, res) => {
       res.status(200).json({ userType: user.userType });
     });
   } catch (error) {
-    console.error('Error during login:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

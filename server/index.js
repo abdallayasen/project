@@ -1,9 +1,9 @@
-// server/index.js
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const userRoutes = require('./api/userRoutes');
-const customerRoutes = require('./api/customerRoutes'); // Assuming you have customerRoutes defined
+const customerRoutes = require('./api/customerRoutes');
+const ordersRoutes = require('./api/ordersRoutes'); // Add this line
 
 // Load environment variables from .env file
 dotenv.config();
@@ -22,7 +22,8 @@ const PORT = process.env.PORT || 8000;
 
 // Use userRoutes for handling user-related requests
 app.use('/', userRoutes);
-app.use('/', customerRoutes); // Ensure this route file is defined
+app.use('/', customerRoutes);
+app.use('/', ordersRoutes); // Add this line
 
 // Start the server
 app.listen(PORT, () => {
