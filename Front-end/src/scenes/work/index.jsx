@@ -1,6 +1,6 @@
 // src/scenes/work/index.jsx
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton } from "@mui/material";
+import { Box, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
 import { ref, onValue, update } from 'firebase/database';
@@ -18,6 +18,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import CommentIcon from '@mui/icons-material/Comment';
 import { UserContext } from "../../context/UserContext";
 import StatusButton from '../../components/StatusButton'; // Ensure correct path
+import Comments from '../../scenes/comments';
 
 const Work = () => {
   const theme = useTheme();
@@ -29,16 +30,19 @@ const Work = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [pendingRow, setPendingRow] = useState(null);
   const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
     const fetchData = () => {
       const ordersRef = ref(db, 'orders/');
       onValue(ordersRef, (snapshot) => {
         const data = snapshot.val();
-        const orderList = data ? Object.keys(data).map((key) => ({
+        const orderList = data ? Object.keys(data).map((key, index) => ({
           id: key,
+          serialNumber: index + 1,
           ...data[key]
         })) : [];
         setRows(orderList);
@@ -94,6 +98,16 @@ const Work = () => {
   const handleDeleteDialogClose = () => {
     setDeleteDialogOpen(false);
     setPendingDeleteRow(null);
+  };
+
+  const handleCommentsDialogOpen = (row) => {
+    setSelectedOrder(row);
+    setCommentsDialogOpen(true);
+  };
+
+  const handleCommentsDialogClose = () => {
+    setCommentsDialogOpen(false);
+    setSelectedOrder(null);
   };
 
   const handleConfirmEdit = () => {
@@ -162,14 +176,8 @@ const Work = () => {
     }
   };
 
-  const handleOpenComments = (row) => {
-    // Navigate to the comments page or modal for the specific row
-    console.log("Open comments for row:", row);
-    // Implement your logic to open comments here, e.g., using a router or modal
-  };
-
   const columns = [
-    { field: "id", headerName: "Serial Number", flex: 0.5, editable: false },
+    { field: "serialNumber", headerName: "Serial Number", flex: 0.5, editable: false },
     {
       field: "customerName",
       headerName: "Customer Name",
@@ -250,7 +258,7 @@ const Work = () => {
       headerName: "Comments",
       flex: 1,
       renderCell: (params) => (
-        <IconButton onClick={() => handleOpenComments(params.row)}>
+        <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
           <CommentIcon />
         </IconButton>
       ),
@@ -348,9 +356,9 @@ const Work = () => {
       >
         <DialogTitle>Confirm Edit</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <Typography>
             Are you sure you want to save the changes?
-          </DialogContentText>
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleEditDialogClose} sx={{ backgroundColor: colors.greenAccent[400] }}>
@@ -368,9 +376,9 @@ const Work = () => {
       >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <Typography>
             Are you sure you want to delete the row?
-          </DialogContentText>
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteDialogClose} sx={{ backgroundColor: colors.greenAccent[400] }}>
@@ -378,6 +386,23 @@ const Work = () => {
           </Button>
           <Button onClick={handleConfirmDelete} sx={{ backgroundColor: colors.greenAccent[400] }}>
             Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={commentsDialogOpen}
+        onClose={handleCommentsDialogClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Comments</DialogTitle>
+        <DialogContent>
+          {selectedOrder && <Comments orderId={selectedOrder.id} />}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCommentsDialogClose} color="primary">
+            Close
           </Button>
         </DialogActions>
       </Dialog>

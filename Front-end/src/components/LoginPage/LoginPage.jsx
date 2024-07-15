@@ -52,9 +52,9 @@ const LoginPage = () => {
         case 'manager':
           navigate('/manager');
           break;
-        case 'customer':
-          navigate('/customermainpage');
-          break;
+      // case 'customer':
+        //  navigate('/customermainpage');
+        //  break;
         case 'employee_office':
           navigate('/employee-office-main');
           break;
