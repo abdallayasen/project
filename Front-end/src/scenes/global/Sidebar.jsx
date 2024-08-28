@@ -23,6 +23,7 @@ import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import CommentIcon from '@mui/icons-material/Comment';
 import AddIcon from '@mui/icons-material/Add';
 import { UserContext } from '../../context/UserContext'; // Import UserContext
+import UserImage from '../../Assets/Icons/user2.png'; // Import the image
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -99,7 +100,7 @@ const Sidebar = () => {
                   alt="profile-user"
                   width="100px"
                   height="100px"
-                  src={`../../assets/icons/user2.png`}
+                  src={UserImage} // Use the imported image
                   style={{ cursor: "pointer", borderRadius: "50%" }}
                 />
               </Box>
@@ -204,7 +205,7 @@ const Sidebar = () => {
               Charts
             </Typography>
             <Item
-              title="Comments"
+              title="Posts"
               to="/manager/comments"
               icon={<CommentIcon />}
               selected={selected}

@@ -54,7 +54,7 @@ const OrdersInfo = () => {
       flex: 1,
     },
     {
-      field: 'orderDescription',
+      field: 'describeOrder',
       headerName: 'Order Description',
       flex: 1,
     },

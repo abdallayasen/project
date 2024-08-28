@@ -1,14 +1,11 @@
-import { Avatar, Box, Fab, Modal, Stack, Tooltip, Typography, styled } from "@mui/material";
-import Button from '@mui/material/Button';
-import ButtonGroup from '@mui/material/ButtonGroup';
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { Avatar, Box, Fab, Modal, Stack, Tooltip, Typography, styled, TextField, Button, ButtonGroup } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
-import TextField from '@mui/material/TextField';
-import { EmojiEmotions, PersonAdd } from "@mui/icons-material";
-import ImageIcon from '@mui/icons-material/Image';
-import VideoCameraBackIcon from '@mui/icons-material/VideoCameraBack';
+import { ref, set } from 'firebase/database';
+import { db } from '../firebase'; // Adjust the path to your firebase.js
+import { UserContext } from '../context/UserContext'; // Import UserContext
 
 const StyledModal = styled(Modal)({
     display: "flex",
@@ -16,30 +13,37 @@ const StyledModal = styled(Modal)({
     justifyContent: "center",
 });
 
-const UserBox = styled(Box)({ ///////////USER BOX , good practice
+const UserBox = styled(Box)({
     display: "flex",
     alignItems: "center",
     gap: "10px",
 });
 
-const AddPost = ({ addPost }) => {
+const AddPost = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [open, setOpen] = useState(false);
     const [postContent, setPostContent] = useState("");
+    const { user } = useContext(UserContext); // Get user from context
 
     const handlePostClick = () => {
-        if (postContent.trim() !== "") {
+        if (postContent.trim() !== "" && user) {
             const newPost = {
                 id: Date.now(),
-                title: "New Post",
                 content: postContent,
-                comments: [],
-                images: []  // Add any image URLs if needed
+                username: user.name, // Use user name instead of ID
+                date: new Date().toISOString(), // Add the current date
             };
-            addPost(newPost);
-            setPostContent("");
-            setOpen(false);
+
+            const postsRef = ref(db, 'posts/' + newPost.id);
+            set(postsRef, newPost)
+                .then(() => {
+                    setPostContent("");
+                    setOpen(false);
+                })
+                .catch((error) => {
+                    console.error("Error adding post: ", error);
+                });
         }
     };
 
@@ -66,7 +70,9 @@ const AddPost = ({ addPost }) => {
                     <Typography variant="h6" color="gray" textAlign="center" fontWeight="bold">Create Post</Typography>
                     <UserBox>
                         <Avatar src="/assets/user.png" sx={{ width: 30, height: 30 }} />
-                        <Typography fontWeight="bold" variant="body1" color={colors.primary[500]}>Current User</Typography>
+                        <Typography fontWeight="bold" variant="body1" color={colors.primary[500]}>
+                            {user?.name}
+                        </Typography>
                     </UserBox>
                     <TextField
                         sx={{
@@ -85,8 +91,7 @@ const AddPost = ({ addPost }) => {
                     />
 
                     <Stack direction="row" gap={1} mt={2} mb={3}>
-                        <ImageIcon color="warning" />
-                        <VideoCameraBackIcon color="success" />
+                        {/* Add icons or functionality for images/videos here if needed */}
                     </Stack>
                     <ButtonGroup variant="contained" aria-label="Basic button group" fullWidth>
                         <Button color="info" onClick={handlePostClick}>Post</Button>
