@@ -1,74 +1,213 @@
-// src/scenes/work/index.jsx
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
+import {
+  Box, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogTitle,
+  IconButton, Typography, Checkbox, MenuItem, Select, Button
+} from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
-import { ref, onValue, update } from 'firebase/database';
-import { db } from '../../firebase';
+import { ref as dbRef, onValue, update, remove } from 'firebase/database';
+import {
+  ref as storageRef, uploadBytes, getDownloadURL, listAll
+} from 'firebase/storage';
+import { db, storage } from '../../firebase';
+import { getAuth } from "firebase/auth";
 import Header from "../../components/Header";
 import { useTheme } from "@mui/material";
-import Button from '@mui/material/Button';
+import { tokens } from "../../theme";
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import FileUploadIcon from '@mui/icons-material/CloudUpload';
-import FileDownloadIcon from '@mui/icons-material/CloudDownload';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import ImageIcon from '@mui/icons-material/Image';
-import DescriptionIcon from '@mui/icons-material/Description';
 import CommentIcon from '@mui/icons-material/Comment';
+import ImageIcon from '@mui/icons-material/Image';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { UserContext } from "../../context/UserContext";
-import StatusButton from '../../components/StatusButton'; // Ensure correct path
+import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
 
 const Work = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [rows, setRows] = useState([]);
-  const { user } = useContext(UserContext);
-  const [editRowsModel, setEditRowsModel] = useState({});
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
-  const [pendingRow, setPendingRow] = useState(null);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [rows, setRows] = useState([]);  // Holds the rows to display in the table
+  const { user } = useContext(UserContext);  // User context to get the current logged-in user
+  const [customers, setCustomers] = useState([]);  // List of customers fetched from the database
+  const [fieldWorkers, setFieldWorkers] = useState([]);  // List of field workers fetched from the database
+  const [editRowsModel, setEditRowsModel] = useState({});  // State to manage row editing
+  const [snackbarOpen, setSnackbarOpen] = useState(false);  // Snackbar state to show notifications
+  const [snackbarMessage, setSnackbarMessage] = useState('');  // Message to display in the snackbar
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);  // Dialog for editing rows
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);  // Dialog for deleting rows
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);  // Dialog for showing comments
+  const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);  // Confirmation dialog for actions
+
+  const [pendingRow, setPendingRow] = useState(null);  // Temporary state for the row being edited
+  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);  // Temporary state for the row being deleted
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);  // State for pending status updates
+  const [refundedStatus, setRefundedStatus] = useState(null);  // Holds the refunded status of the row
+  const [selectedOrder, setSelectedOrder] = useState(null);  // The selected order for comments
 
   useEffect(() => {
-    const fetchData = () => {
-      const ordersRef = ref(db, 'orders/');
-      onValue(ordersRef, (snapshot) => {
+    const fetchOrders = async () => {
+      const ordersRef = dbRef(db, 'orders/');
+      onValue(ordersRef, async (snapshot) => {
         const data = snapshot.val();
-        const orderList = data ? Object.keys(data).map((key, index) => ({
-          id: key,
-          serialNumber: index + 1,
-          ...data[key]
-        })) : [];
-        setRows(orderList);
+        const orderList = data
+          ? await Promise.all(
+              Object.keys(data).map(async (key, index) => {
+                const fileList = await fetchFilesFromStorage(key);
+                return {
+                  id: key,
+                  serialNumber: index + 1,
+                  files: fileList,
+                  ...data[key],
+                };
+              })
+            )
+          : [];
+    
+        // Filter out completed orders before setting rows
+        const activeOrders = orderList.filter((order) => !order.isCompleted); 
+        setRows(activeOrders);  // Only show active orders (not completed)
+      });
+    };
+    
+    const fetchCustomers = () => {
+      const customersRef = dbRef(db, 'customers/');
+      onValue(customersRef, (snapshot) => {
+        const data = snapshot.val();
+        const customerList = data ? Object.values(data) : [];
+        setCustomers(customerList);
       });
     };
 
-    fetchData();
+    const fetchFieldWorkers = () => {
+      const usersRef = dbRef(db, 'users/');
+      onValue(usersRef, (snapshot) => {
+        const data = snapshot.val();
+        const fieldWorkerList = data ? Object.values(data).filter(user => user.userType === 'field_worker') : [];
+        setFieldWorkers(fieldWorkerList);
+      });
+    };
+
+    fetchOrders();
+    fetchCustomers();
+    fetchFieldWorkers();
   }, []);
 
-  const updateOrderStatus = (orderId, type, newStatus) => {
-    const orderRef = ref(db, `orders/${orderId}`);
-    update(orderRef, { [type]: newStatus }).then(() => {
-      setRows((prevRows) => prevRows.map((row) => {
-        if (row.id === orderId) {
-          return { ...row, [type]: newStatus };
-        }
-        return row;
-      }));
-      setSnackbarMessage(`Order ${orderId} ${type} updated to ${newStatus}`);
-      setSnackbarOpen(true);
-    }).catch((error) => {
-      setSnackbarMessage(`Failed to update order ${orderId}: ${error.message}`);
-      setSnackbarOpen(true);
-    });
+  // Function to fetch files from Firebase Storage based on order ID
+  const fetchFilesFromStorage = async (orderId) => {
+    const filesRef = storageRef(storage, `orders/${orderId}`);
+    const fileList = [];
+    try {
+      const result = await listAll(filesRef);
+      for (const itemRef of result.items) {
+        const url = await getDownloadURL(itemRef);
+        fileList.push({ name: itemRef.name, url });
+      }
+    } catch (error) {
+      console.error("Error fetching files from storage:", error);
+    }
+    return fileList;
   };
 
+  // Map orders with customer names
+  const rowsWithCustomerNames = rows.map(order => {
+    const customer = customers.find(cust => cust.email === order.customerEmail);
+    return {
+      ...order,
+      customerName: customer ? customer.name : 'Unknown Customer'
+    };
+  });
+
+  // Function to determine if a user is responsible for an order
+  const isUserResponsible = (row) => {
+    // Allow office employees and managers to edit their respective orders
+    if (user.userType === 'manager') return true;
+    return (
+      (user.userType === 'employee_office' && row.employeeOfficeName === user.name) || 
+      (user.userType === 'field_worker' && row.employeeFieldName === user.name)
+    );
+  };
+
+  const getRowClass = (row) => {
+    // Only apply the non-editable class to rows where the office employee's name is different
+    if (user.userType === 'employee_office' && row.employeeOfficeName !== user.name && row.employeeOfficeName) {
+      return 'white-shadow';
+    }
+    return ''; // No additional class is needed, so return an empty string
+  };
+
+  // Function to update order status
+  const updateOrderStatus = (orderId, type, newStatus) => {
+    if (newStatus === "Success") {
+      const currentRow = rows.find((row) => row.id === orderId);
+      const previousStatus = currentRow ? currentRow[type] : "Refunded";
+
+      setRefundedStatus(previousStatus);
+      setPendingStatusUpdate({ orderId, type, newStatus });
+      setConfirmationDialogOpen(true);
+    } else {
+      const orderRef = dbRef(db, `orders/${orderId}`);
+      update(orderRef, { [type]: newStatus }).then(() => {
+        setRows((prevRows) =>
+          prevRows.map((row) => (row.id === orderId ? { ...row, [type]: newStatus } : row))
+        );
+        setSnackbarMessage(`Order ${orderId} ${type} updated to ${newStatus}`);
+        setSnackbarOpen(true);
+      }).catch((error) => {
+        setSnackbarMessage(`Failed to update order ${orderId}: ${error.message}`);
+        setSnackbarOpen(true);
+      });
+    }
+  };
+
+  // Confirm the status update for an order
+  const handleConfirmStatusUpdate = () => {
+    if (pendingStatusUpdate) {
+      const { orderId, type, newStatus } = pendingStatusUpdate;
+      const orderRef = dbRef(db, `orders/${orderId}`);
+      
+      update(orderRef, { [type]: newStatus }).then(() => {
+        setRows((prevRows) =>
+          prevRows.map((row) => (row.id === orderId ? { ...row, [type]: newStatus } : row))
+        );
+        setSnackbarMessage(`Order ${orderId} ${type} updated to ${newStatus}`);
+        setSnackbarOpen(true);
+        setConfirmationDialogOpen(false);
+        setPendingStatusUpdate(null);
+      }).catch((error) => {
+        setSnackbarMessage(`Failed to update order ${orderId}: ${error.message}`);
+        setSnackbarOpen(true);
+      });
+    }
+  };
+
+  // Cancel the pending status update
+  const handleCancelStatusUpdate = () => {
+    if (pendingStatusUpdate) {
+      const { orderId, type } = pendingStatusUpdate;
+      const orderRef = dbRef(db, `orders/${orderId}`);
+      
+      update(orderRef, { [type]: refundedStatus || "Refunded" })
+        .then(() => {
+          setRows((prevRows) =>
+            prevRows.map((row) =>
+              row.id === orderId ? { ...row, [type]: refundedStatus || "Refunded" } : row
+            )
+          );
+          setSnackbarMessage(`Order ${orderId} ${type} reverted to ${refundedStatus || "Refunded"}`);
+          setSnackbarOpen(true);
+          setConfirmationDialogOpen(false);
+          setPendingStatusUpdate(null);
+        })
+        .catch((error) => {
+          setSnackbarMessage(`Failed to revert order ${orderId}: ${error.message}`);
+          setSnackbarOpen(true);
+        });
+    }
+  };
+
+  // Function to close the snackbar notification
   const handleSnackbarClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -80,6 +219,7 @@ const Work = () => {
     setEditRowsModel(model);
   };
 
+  // Edit row dialog functions
   const handleEditDialogOpen = (row) => {
     setPendingRow(row);
     setEditDialogOpen(true);
@@ -90,6 +230,7 @@ const Work = () => {
     setPendingRow(null);
   };
 
+  // Delete row dialog functions
   const handleDeleteDialogOpen = (row) => {
     setPendingDeleteRow(row);
     setDeleteDialogOpen(true);
@@ -100,6 +241,7 @@ const Work = () => {
     setPendingDeleteRow(null);
   };
 
+  // Comments dialog functions
   const handleCommentsDialogOpen = (row) => {
     setSelectedOrder(row);
     setCommentsDialogOpen(true);
@@ -110,6 +252,7 @@ const Work = () => {
     setSelectedOrder(null);
   };
 
+  // Confirm the edit of a row
   const handleConfirmEdit = () => {
     const newRow = pendingRow;
     const updatedRows = rows.map((row) => (row.id === newRow.id ? newRow : row));
@@ -119,62 +262,166 @@ const Work = () => {
     handleEditDialogClose();
   };
 
+  const fetchOrders = async () => {
+    const ordersRef = dbRef(db, 'orders/');
+    onValue(ordersRef, async (snapshot) => {
+      const data = snapshot.val();
+      const orderList = data
+        ? await Promise.all(Object.keys(data).map(async (key, index) => {
+            const fileList = await fetchFilesFromStorage(key);
+            return {
+              id: key,
+              serialNumber: index + 1,
+              files: fileList,
+              ...data[key],
+            };
+          }))
+        : [];
+      const activeOrders = orderList.filter((order) => !order.isCompleted); // Filter out completed orders
+      setRows(activeOrders);
+    });
+  };
+
+  
+  // Process row updates
   const handleProcessRowUpdate = (newRow) => {
     const updatedRows = rows.map((row) => (row.id === newRow.id ? newRow : row));
     setRows(updatedRows);
     return newRow;
   };
 
+  // Confirm the deletion of a row
   const handleConfirmDelete = () => {
-    setRows((prevRows) => prevRows.filter((row) => row.id !== pendingDeleteRow.id));
-    setSnackbarMessage('Row deleted successfully');
-    setSnackbarOpen(true);
-    handleDeleteDialogClose();
+    const orderId = pendingDeleteRow.id;
+    const orderRef = dbRef(db, `orders/${orderId}`);
+    remove(orderRef).then(() => {
+      setRows((prevRows) => prevRows.filter((row) => row.id !== orderId));
+      setSnackbarMessage('Row deleted successfully');
+      setSnackbarOpen(true);
+      handleDeleteDialogClose();
+    }).catch((error) => {
+      setSnackbarMessage(`Failed to delete order ${orderId}: ${error.message}`);
+      setSnackbarOpen(true);
+    });
   };
 
-  const handleEditRow = (row) => {
-    handleEditDialogOpen(row);
-  };
-
+  // Delete row handler
   const handleDeleteRow = (row) => {
     handleDeleteDialogOpen(row);
   };
 
-  const handleFileUpload = (event, row) => {
+  const handleOfficeCheckboxChange = async (orderId) => {
+    if (user.userType === 'employee_office') {
+      const orderRef = dbRef(db, `orders/${orderId}`);
+      await update(orderRef, { employeeOfficeName: user.name });
+      setRows((prevRows) =>
+        prevRows.map((row) =>
+          row.id === orderId ? { ...row, employeeOfficeName: user.name } : row
+        )
+      );
+    }
+  };
+
+  const handleFieldWorkerChange = async (orderId, fieldWorkerName) => {
+    const orderRef = dbRef(db, `orders/${orderId}`);
+    await update(orderRef, { employeeFieldName: fieldWorkerName });
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === orderId ? { ...row, employeeFieldName: fieldWorkerName } : row
+      )
+    );
+  };
+
+  const handleFileUpload = async (orderId, event) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.error("User is not authenticated. Please log in to upload files.");
+      setSnackbarMessage("User is not authenticated. Please log in to upload files.");
+      setSnackbarOpen(true);
+      return;
+    }
+
     const file = event.target.files[0];
     if (file) {
-      const updatedRows = rows.map((r) => {
-        if (r.id === row.id) {
-          return { ...r, files: [...(r.files || []), file] };
-        }
-        return r;
-      });
-      setRows(updatedRows);
-      setSnackbarMessage('File uploaded successfully');
+      const fileStorageRef = storageRef(storage, `orders/${orderId}/${file.name}`);
+      try {
+        await uploadBytes(fileStorageRef, file);
+        const url = await getDownloadURL(fileStorageRef);
+        setRows((prevRows) =>
+          prevRows.map((row) =>
+            row.id === orderId
+              ? { ...row, files: [...(row.files || []), { name: file.name, url }] }
+              : row
+          )
+        );
+        setSnackbarMessage("File uploaded successfully.");
+        setSnackbarOpen(true);
+      } catch (error) {
+        setSnackbarMessage("Upload failed: " + error.message);
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
+  const handleFileDownload = async (file) => {
+    try {
+      const link = document.createElement('a');
+      link.href = file.url;
+      link.download = file.name;
+      link.click();
+    } catch (error) {
+      setSnackbarMessage("Download failed: " + error.message);
       setSnackbarOpen(true);
     }
   };
 
-  const handleFileDownload = (file) => {
-    const url = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const getFileIcon = (file) => {
-    const fileType = file.type;
-    if (fileType.includes('pdf')) {
-      return <PictureAsPdfIcon />;
-    } else if (fileType.includes('image')) {
-      return <ImageIcon />;
-    } else {
-      return <DescriptionIcon />;
+  const handleDownloadAllFiles = async (orderId) => {
+    const files = rows.find(row => row.id === orderId)?.files || [];
+    for (const file of files) {
+      await handleFileDownload(file);
     }
   };
+
+  // Render file icons in the table
+  const renderFileIcons = (params) => {
+    const files = params.row.files || [];
+    return (
+      <Box sx={{ display: 'flex', gap: 0.5 }}>
+        {files.map((file) => {
+          let icon;
+          const lowerCaseFile = file.name.toLowerCase();
+          if (lowerCaseFile.endsWith('.pdf')) {
+            icon = <PictureAsPdfIcon />;
+          } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg')) {
+            icon = <ImageIcon sx={{ color: 'white', fontSize: 20 }} />;
+          } else if (lowerCaseFile.endsWith('.mp4')) {
+            icon = <VideoLibraryIcon />;
+          } else {
+            icon = <CloudDownloadIcon sx={{ color: 'white' }} />;
+          }
+
+          return (
+            <IconButton
+              key={file.name}
+              onClick={() => handleFileDownload(file)}
+            >
+              {icon}
+            </IconButton>
+          );
+        })}
+      </Box>
+    );
+  };
+
+  const statusStyle = (status) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    borderRadius: 2,
+  });
 
   const columns = [
     { field: "serialNumber", headerName: "Serial Number", flex: 0.5, editable: false },
@@ -183,31 +430,89 @@ const Work = () => {
       headerName: "Customer Name",
       flex: 1,
       cellClassName: "name-column--cell",
-      editable: true,
+      editable: false,
+    },
+    {
+      field: "orderPrivateNumber",
+      headerName: "Order Private Number",
+      flex: 1,
+    },
+    {
+      field: "describeOrder",
+      headerName: "Order Description",
+      flex: 1,
+      editable: (params) => isUserResponsible(params.row),
     },
     {
       field: "orderType",
-      headerName: "Work Name",
+      headerName: "Order Type",
       flex: 1,
-      editable: true,
+      editable: (params) => isUserResponsible(params.row),
     },
     {
-      field: "orderDate",
-      headerName: "Order Date",
+      field: "employeeOfficeName",
+      headerName: "Office Employee",
       flex: 1,
-      editable: true,
+      renderCell: (params) => {
+        if (params.value) {
+          return (
+            <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              {params.value}
+            </Typography>
+          );
+        }
+        return (
+          <Checkbox
+            onChange={() => handleOfficeCheckboxChange(params.row.id)}
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+            disabled={user.userType !== 'employee_office'}
+          />
+        );
+      },
+    },
+    {
+      field: "employeeFieldName",
+      headerName: "Field Employee",
+      flex: 1,
+      renderCell: (params) => {
+        if (params.value) {
+          return (
+            <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              {params.value}
+            </Typography>
+          );
+        }
+        return (
+          <Select
+            value={params.value || ''}
+            onChange={(e) => handleFieldWorkerChange(params.row.id, e.target.value)}
+            displayEmpty
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+          >
+            <MenuItem value="" disabled>Select Field Worker</MenuItem>
+            {fieldWorkers.map((worker) => (
+              <MenuItem key={worker.name} value={worker.name}>
+                {worker.name}
+              </MenuItem>
+            ))}
+          </Select>
+        );
+      },
     },
     {
       field: "fieldStatus",
       headerName: "Field Status",
       flex: 1,
       renderCell: (params) => (
-        <StatusButton
-          initialStatus={params.value}
-          type="fieldStatus"
-          orderId={params.row.id}
-          updateOrderStatus={updateOrderStatus}
-        />
+        <Box sx={statusStyle(params.value)}>
+          <StatusButton
+            initialStatus={params.value}
+            type="fieldStatus"
+            orderId={params.row.id}
+            updateOrderStatus={updateOrderStatus}
+            disabled={!isUserResponsible(params.row)}
+          />
+        </Box>
       ),
       editable: false,
     },
@@ -216,81 +521,81 @@ const Work = () => {
       headerName: "Office Status",
       flex: 1,
       renderCell: (params) => (
-        <StatusButton
-          initialStatus={params.value}
-          type="officeStatus"
-          orderId={params.row.id}
-          updateOrderStatus={updateOrderStatus}
-        />
+        <Box sx={statusStyle(params.value)}>
+          <StatusButton
+            initialStatus={params.value}
+            type="officeStatus"
+            orderId={params.row.id}
+            updateOrderStatus={updateOrderStatus}
+            disabled={!isUserResponsible(params.row)}
+          />
+        </Box>
       ),
       editable: false,
-    },
-    {
-      field: "employeeFieldName",
-      headerName: "Field Employee",
-      flex: 1,
-      editable: true,
-    },
-    {
-      field: "employeeOfficeName",
-      headerName: "Office Employee",
-      flex: 1,
-      editable: true,
     },
     {
       field: "files",
       headerName: "Files",
       flex: 1,
-      renderCell: (params) => (
-        <Box>
-          {params.row.files && params.row.files.map((file, index) => (
-            <IconButton key={index} onClick={() => handleFileDownload(file)}>
-              {getFileIcon(file)}
-            </IconButton>
-          ))}
-        </Box>
-      ),
-      sortable: false,
-      filterable: false,
+      renderCell: renderFileIcons,
     },
     {
       field: "comments",
       headerName: "Comments",
       flex: 1,
       renderCell: (params) => (
-        <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
-          <CommentIcon />
-        </IconButton>
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'flex-start', 
+            justifyContent: 'center', 
+            height: '100%' 
+          }}
+        >
+          <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
+            <CommentIcon />
+          </IconButton>
+        </Box>
       ),
       sortable: false,
       filterable: false,
-    },
+    }
+    ,
     {
       field: "action",
       headerName: "Action",
       flex: 1,
       renderCell: (params) => (
-        <Box>
-          <IconButton onClick={() => handleDeleteRow(params.row)} color="warning">
+        <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
+          {/* Delete Button */}
+          <IconButton
+            onClick={() => handleDeleteRow(params.row)}
+            color="warning"
+            disabled={user.userType === 'field_worker'} // Disable delete for field workers
+          >
             <DeleteIcon />
           </IconButton>
-
-          <input
-            style={{ display: 'none' }}
-            id={`file-upload-${params.row.id}`}
-            type="file"
-            onChange={(event) => handleFileUpload(event, params.row)}
-          />
-          <label htmlFor={`file-upload-${params.row.id}`}>
-            <IconButton component="span">
-              <FileUploadIcon />
-            </IconButton>
-          </label>
+          
+          {/* Upload Button */}
+          <IconButton component="label" color="primary" disabled={!isUserResponsible(params.row)}>
+            <CloudUploadIcon sx={{ color: 'white' }} />
+            <input
+              type="file"
+              hidden
+              onChange={(event) => handleFileUpload(params.row.id, event)}
+            />
+          </IconButton>
+          
+          {/* Download All Files Button */}
+          <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
+            <CloudDownloadIcon sx={{ color: 'white' }} />
+          </IconButton>
         </Box>
       ),
       sortable: false,
       filterable: false,
-    },
+    }
+    ,
   ];
 
   return (
@@ -329,14 +634,20 @@ const Work = () => {
           "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
             color: `${colors.grey[100]} !important`,
           },
+          "& .white-shadow": {
+            backgroundColor: 'rgba(255, 255, 255, 0.6)',
+            pointerEvents: 'none',
+            opacity: 0.6,
+          },
         }}
       >
         <DataGrid
-          rows={rows}
+          rows={rowsWithCustomerNames}
           columns={columns}
           editRowsModel={editRowsModel}
           onEditRowsModelChange={handleEditRowsModelChange}
           processRowUpdate={handleProcessRowUpdate}
+          getRowClassName={(params) => getRowClass(params.row)}
           slots={{ toolbar: GridToolbar }}
         />
       </Box>
@@ -391,14 +702,46 @@ const Work = () => {
       </Dialog>
 
       <Dialog
+        open={confirmationDialogOpen}
+        onClose={handleCancelStatusUpdate}
+      >
+        <DialogTitle>Confirm Status Change</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to update the status to "Success"?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelStatusUpdate} sx={{ backgroundColor: colors.greenAccent[400] }}>
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmStatusUpdate} sx={{ backgroundColor: colors.greenAccent[400] }}>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
         open={commentsDialogOpen}
         onClose={handleCommentsDialogClose}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: '#04042c',
+            color: '#ffffff',
+            overflowY: 'auto',
+          },
+        }}
       >
         <DialogTitle>Comments</DialogTitle>
-        <DialogContent>
-          {selectedOrder && <Comments orderId={selectedOrder.id} />}
+        <DialogContent
+          sx={{
+            overflowY: 'auto',
+            maxHeight: '70vh',
+          }}
+        >
+          {selectedOrder && <Comments orderPrivateNumber={selectedOrder.orderPrivateNumber} />}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCommentsDialogClose} color="primary">

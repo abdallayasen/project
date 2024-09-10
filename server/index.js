@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const userRoutes = require('./api/userRoutes');
 const customerRoutes = require('./api/customerRoutes');
-const ordersRoutes = require('./api/ordersRoutes'); // Add this line
+const ordersRoutes = require('./api/ordersRoutes');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -23,9 +23,9 @@ const PORT = process.env.PORT || 8000;
 // Use userRoutes for handling user-related requests
 app.use('/', userRoutes);
 app.use('/', customerRoutes);
-app.use('/', ordersRoutes); // Add this line
+app.use('/', ordersRoutes);
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);  // Use backticks here for string interpolation
 });

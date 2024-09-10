@@ -9,17 +9,36 @@ import { useTheme } from '@mui/material';
 
 const OrdersInfo = () => {
   const [orders, setOrders] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   useEffect(() => {
+    // Fetch orders
     const ordersRef = ref(db, 'orders/');
     onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
-      const ordersList = data ? Object.keys(data).map((key, index) => ({ id: index + 1, ...data[key] })) : [];
+      const ordersList = data ? Object.keys(data).map((key) => ({ id: key, ...data[key] })) : [];
       setOrders(ordersList);
     });
+
+    // Fetch customers
+    const customersRef = ref(db, 'customers/');
+    onValue(customersRef, (snapshot) => {
+      const data = snapshot.val();
+      const customerList = data ? Object.values(data) : [];
+      setCustomers(customerList);
+    });
   }, []);
+
+  // Join orders with customers to get customer name based on email
+  const ordersWithCustomerNames = orders.map(order => {
+    const customer = customers.find(cust => cust.email === order.customerEmail);
+    return {
+      ...order,
+      customerName: customer ? customer.name : 'Unknown Customer'
+    };
+  });
 
   const columns = [
     { field: 'id', headerName: 'Order Number', flex: 0.5 },
@@ -96,7 +115,7 @@ const OrdersInfo = () => {
         }}
       >
         <DataGrid
-          rows={orders}
+          rows={ordersWithCustomerNames}
           columns={columns}
           slots={{ toolbar: GridToolbar }}
         />

@@ -35,7 +35,9 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
       onClick={() => setSelected(title)}
       icon={icon}
     >
-      <Typography>{title}</Typography>
+      <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+        {title}
+      </Typography>
       <Link to={to} />
     </MenuItem>
   );
@@ -83,7 +85,7 @@ const Sidebar = () => {
                 alignItems="center"
                 ml="15px"
               >
-                <Typography variant="h3" color={colors.grey[100]}>
+                <Typography variant="h4" color={colors.grey[100]} sx={{ fontWeight: "bold" }}>
                   GraphMap
                 </Typography>
                 <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
@@ -106,14 +108,14 @@ const Sidebar = () => {
               </Box>
               <Box textAlign="center">
                 <Typography
-                  variant="h2"
+                  variant="h4"
                   color={colors.grey[100]}
                   fontWeight="bold"
                   sx={{ m: "10px 0 0 0" }}
                 >
                   {user?.userType.charAt(0).toUpperCase() + user?.userType.slice(1)}
                 </Typography>
-                <Typography variant="h2" color={colors.greenAccent[500]}>
+                <Typography variant="h5" color={colors.greenAccent[500]} sx={{ fontWeight: "bold" }}>
                   {user?.name}
                 </Typography>
               </Box>
@@ -124,17 +126,18 @@ const Sidebar = () => {
             <Typography
               variant="h6"
               color={colors.grey[300]}
-              sx={{ m: "15px 0 5px 20px" }}
+              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
-              Manage
+              
             </Typography>
             <Item
-              title="Dashboard"
+              title="Home"
               to="/manager/dashboard"
               icon={<HomeOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
+            Manage
             <Item
               title="My Work"
               to="/manager/mywork"
@@ -160,14 +163,14 @@ const Sidebar = () => {
             <Typography
               variant="h6"
               color={colors.grey[300]}
-              sx={{ m: "15px 0 5px 20px" }}
+              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
               Information
             </Typography>
             {user?.userType === 'manager' && (
               <>
                 <Item
-                  title="Orders Page"
+                  title="Orders Info"
                   to="/manager/orders"
                   icon={<ContactsOutlinedIcon />}
                   selected={selected}
@@ -181,7 +184,7 @@ const Sidebar = () => {
                   setSelected={setSelected}
                 />
                 <Item
-                  title="Client Info"
+                  title="Clients Info"
                   to="/manager/customer"
                   icon={<ContactsOutlinedIcon />}
                   selected={selected}
@@ -189,20 +192,31 @@ const Sidebar = () => {
                 />
               </>
             )}
+            
+
+            <Typography
+              variant="h6"
+              color={colors.grey[300]}
+              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
+            >
+              Charts
+              
+            </Typography>
             <Item
-              title="Geography"
+              title="Geography Chart"
               to="/manager/geography"
               icon={<MapOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
+            
 
             <Typography
               variant="h6"
               color={colors.grey[300]}
-              sx={{ m: "15px 0 5px 20px" }}
+              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
-              Charts
+              Tools 
             </Typography>
             <Item
               title="Posts"
@@ -211,14 +225,6 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
-
-            <Typography
-              variant="h6"
-              color={colors.grey[300]}
-              sx={{ m: "15px 0 5px 20px" }}
-            >
-              Tools
-            </Typography>
             <Item
               title="Calendar"
               to="/manager/calendar"
@@ -226,6 +232,14 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
+            
+            <Typography
+              variant="h6"
+              color={colors.grey[300]}
+              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
+            >
+            Add
+            </Typography>
             {user?.userType === 'manager' && (
               <>
                 <Item
@@ -242,6 +256,7 @@ const Sidebar = () => {
                   selected={selected}
                   setSelected={setSelected}
                 />
+                
               </>
             )}
           </Box>
