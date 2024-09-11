@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { Box, Button, Typography, useTheme, Card, CardContent, Select, MenuItem, Grid } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Box, Button, Typography, useTheme, Card, CardContent, Grid, Select, MenuItem } from "@mui/material";
 import Header from "../../components/Header";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 import { ref as dbRef, onValue } from 'firebase/database';
@@ -21,9 +21,10 @@ const Geography = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [markers, setMarkers] = useState([]);
-  const [selectedColor, setSelectedColor] = useState("red");
-  const [selectedOrder, setSelectedOrder] = useState("");
-  const [orders, setOrders] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [filteredMarkers, setFilteredMarkers] = useState([]);
+  const [selectedColor, setSelectedColor] = useState("all");
+  const [dateFilter, setDateFilter] = useState(false);
 
   // Load the Google Maps API
   const { isLoaded } = useJsApiLoader({
@@ -31,70 +32,104 @@ const Geography = () => {
     libraries: ["places"],
   });
 
-  // Fetch the orders from Firebase
+  // Fetch the orders and customers data
   useEffect(() => {
+    // Fetch customers
+    const customersRef = dbRef(db, 'customers/');
+    onValue(customersRef, (snapshot) => {
+      const customerData = snapshot.val();
+      const customerList = customerData ? Object.values(customerData) : [];
+      setCustomers(customerList);
+    });
+
+    // Fetch orders and set markers with full data
     const ordersRef = dbRef(db, 'orders/');
     onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
-      const fetchedOrders = data ? Object.keys(data).map((key) => data[key].orderPrivateNumber) : [];
-      setOrders(fetchedOrders);
-    });
-  }, []);
+      const fetchedOrders = data
+        ? Object.keys(data).map((key) => {
+            const order = data[key];
+            const customer = customers.find(cust => cust.email === order.customerEmail) || {};
 
-  const onMapClick = useCallback((event) => {
-    if (!selectedOrder) {
-      alert("Please select an order.");
-      return;
+            let markerColor = "red";
+            let isCompletedStatus = "no";
+
+            if (order.employeeFieldName && !order.isCompleted) {
+              markerColor = "yellow"; // Yellow when a field worker is assigned and not completed
+              isCompletedStatus = "under processing";
+            } else if (order.isCompleted) {
+              markerColor = "green"; // Green when order is completed
+              isCompletedStatus = "yes";
+            }
+
+            return {
+              ...order,
+              position: {
+                lat: parseFloat(order.x),
+                lng: parseFloat(order.y),
+              },
+              color: markerColor,
+              customerName: customer.name || "Unknown Customer",
+              customerPhone: customer.phone || "No Phone Available",
+              isCompletedStatus, // Store the completion status based on the marker color
+              orderDate: new Date(order.orderDate), // Add orderDate for filtering
+            };
+          })
+        : [];
+      setMarkers(fetchedOrders);
+    });
+  }, [customers]);
+
+  // Filter markers based on color and date filters
+  useEffect(() => {
+    let filtered = [...markers];
+
+    // Apply color filter
+    if (selectedColor !== "all") {
+      filtered = filtered.filter((marker) => marker.color === selectedColor);
     }
 
-    const newMarker = {
-      id: Date.now(),
-      position: {
-        lat: event.latLng.lat(),
-        lng: event.latLng.lng(),
-      },
-      color: selectedColor,
-      orderPrivateNumber: selectedOrder,
-    };
+    // Apply date filter (only show oldest 10 orders if date filter is selected)
+    if (dateFilter) {
+      filtered.sort((a, b) => a.orderDate - b.orderDate); // Sort by date ascending
+      filtered = filtered.slice(0, 10); // Take only the oldest 10
+    }
 
-    setMarkers((current) => [...current, newMarker]);
-  }, [selectedColor, selectedOrder]);
+    setFilteredMarkers(filtered);
+  }, [markers, selectedColor, dateFilter]);
 
   const handleDeleteMarker = (markerId) => {
     setMarkers((current) => current.filter((marker) => marker.id !== markerId));
-  };
-
-  const handleColorChange = (event) => {
-    setSelectedColor(event.target.value);
-  };
-
-  const handleOrderChange = (event) => {
-    setSelectedOrder(event.target.value);
   };
 
   return (
     <Box m="20px">
       <Header title="Geography Vizo Map" subtitle="Visualize locations for current and previous work orders" />
 
-      {/* Controls */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" my={2}>
-        <Box display="flex" gap={2}>
-          <Select value={selectedOrder} onChange={handleOrderChange} displayEmpty>
-            <MenuItem value="" disabled>Select Order</MenuItem>
-            {orders.map((orderPrivateNumber) => (
-              <MenuItem key={orderPrivateNumber} value={orderPrivateNumber}>
-                {orderPrivateNumber}
-              </MenuItem>
-            ))}
-          </Select>
+      {/* Filter Controls */}
+      <Box display="flex" gap={2} mb={4}>
+        <Select
+          value={selectedColor}
+          onChange={(e) => setSelectedColor(e.target.value)}
+          displayEmpty
+        >
+          <MenuItem value="all">All Colors</MenuItem>
+          <MenuItem value="red">Red</MenuItem>
+          <MenuItem value="yellow">Yellow</MenuItem>
+          <MenuItem value="green">Green</MenuItem>
+        </Select>
 
-          <Select value={selectedColor} onChange={handleColorChange}>
-            <MenuItem value="red">Red</MenuItem>
-            <MenuItem value="green">Green</MenuItem>
-          </Select>
-        </Box>
+        <Button
+  variant={dateFilter ? "contained" : "outlined"}
+  onClick={() => setDateFilter((prev) => !prev)}
+  sx={{
+    color: 'white', // Set text color to white
+    borderColor: 'white', // Ensure the outline also appears in white when in "outlined" mode
+  }}
+>
+  {dateFilter ? "Show All" : "Show Oldest 10 Orders"}
+</Button>
 
-        <Typography variant="body1">Click on the map to add a marker for the selected order.</Typography>
       </Box>
 
       {/* Google Map */}
@@ -104,9 +139,8 @@ const Geography = () => {
             mapContainerStyle={containerStyle}
             center={center}
             zoom={10}
-            onClick={onMapClick}
           >
-            {markers.map((marker) => (
+            {filteredMarkers.map((marker) => (
               <Marker
                 key={marker.id}
                 position={marker.position}
@@ -115,7 +149,7 @@ const Geography = () => {
                   color: marker.color,
                 }}
                 icon={{
-                  url: `http://maps.google.com/mapfiles/ms/icons/${marker.color}-dot.png`,
+                  url: `http://maps.google.com/mapfiles/ms/icons/${marker.color}-dot.png`,  // Marker color based on assigned worker
                 }}
               />
             ))}
@@ -123,13 +157,13 @@ const Geography = () => {
         )}
       </Box>
 
-      {/* Marker Table */}
+      {/* Marker Information */}
       <Box mt={4}>
         <Typography variant="h5" sx={{ mb: 2 }}>
           Markers Information
         </Typography>
         <Grid container spacing={2}>
-          {markers.map((marker) => (
+          {filteredMarkers.map((marker) => (
             <Grid item xs={12} sm={6} md={4} key={marker.id}>
               <Card sx={{ backgroundColor: colors.primary[400], color: colors.grey[100], boxShadow: `0 4px 10px ${colors.blueAccent[500]}`, borderRadius: '12px' }}>
                 <CardContent>
@@ -137,10 +171,28 @@ const Geography = () => {
                     Order #{marker.orderPrivateNumber}
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
+                    Order Private Number: {marker.orderPrivateNumber}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
                     Coordinates: {marker.position.lat.toFixed(4)}, {marker.position.lng.toFixed(4)}
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Is Completed: {marker.color === "green" ? "Yes" : "No"}
+                    Field Worker: {marker.employeeFieldName || "No Name Yet"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Office Employee: {marker.employeeOfficeName || "No Name Yet"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Description: {marker.describeOrder || "No Description"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Customer Name: {marker.customerName || "Unknown Customer"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Customer Phone: {marker.customerPhone || "No Phone Available"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Is Completed: {marker.isCompletedStatus}
                   </Typography>
                   <Button
                     startIcon={<DeleteIcon />}

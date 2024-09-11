@@ -1,101 +1,82 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, IconButton, Checkbox, MenuItem, Select, Typography, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Button
+  Box, IconButton, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Button
 } from '@mui/material';
-
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { ref as dbRef, onValue, update } from 'firebase/database';
+import { ref as dbRef, onValue } from 'firebase/database';
 import { ref as storageRef, getDownloadURL, listAll } from 'firebase/storage';
 import { db, storage } from '../../firebase';
-import Header from "../../components/Header";
+import { Typography, useTheme } from '@mui/material';
+import { tokens } from '../../theme';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ImageIcon from '@mui/icons-material/Image';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import DeleteIcon from '@mui/icons-material/Delete';
 import CommentIcon from '@mui/icons-material/Comment';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import Header from "../../components/Header";
 import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
-import { useTheme } from '@mui/material';
-import { tokens } from '../../theme';
 
 const AllWork = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [rows, setRows] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [fieldWorkers, setFieldWorkers] = useState([]);
+  const [ordersInfo, setOrdersInfo] = useState([]); // Orders information table
+  const [customers, setCustomers] = useState([]); // Customer info table
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const index = 0;
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    // Fetch orders from OrdersInfo (which contains order details)
+    const fetchOrdersInfo = () => {
       const ordersRef = dbRef(db, 'orders/');
-      onValue(ordersRef, async (snapshot) => {
+      onValue(ordersRef, (snapshot) => {
         const data = snapshot.val();
         const orderList = data
-          ? await Promise.all(Object.keys(data).map(async (key, index) => {
-              const fileList = await fetchFilesFromStorage(key);
-              return {
-                id: key,
-                serialNumber: index + 1,
-                files: fileList,
-                ...data[key],
-              };
+          ? Object.keys(data).map((key) => ({
+              id: key,
+              serialNumber: index + 1, // Assign a serial number based on the index
+              orderPrivateNumber: data[key].orderPrivateNumber,
+              client_mail: data[key].customerEmail,
+              officeStatus: data[key].officeStatus,
+              fieldStatus: data[key].fieldStatus,
+              ...data[key],
             }))
           : [];
-        const completedOrders = orderList.filter((order) => order.isCompleted); // Show only completed orders
-        setRows(completedOrders);
+
+        // Filter orders: only show orders with both officeStatus and fieldStatus as 'Success'
+        const filteredOrders = orderList.filter(
+          (order) => order.officeStatus === 'Success' && order.fieldStatus === 'Success'
+        );
+
+        setOrdersInfo(filteredOrders); // Save filtered orders
       });
     };
-    
 
+    // Fetch customers
     const fetchCustomers = () => {
       const customersRef = dbRef(db, 'customers/');
       onValue(customersRef, (snapshot) => {
         const data = snapshot.val();
         const customerList = data ? Object.values(data) : [];
-        setCustomers(customerList);
+        setCustomers(customerList); // Save customer data
       });
     };
 
-    const fetchFieldWorkers = () => {
-      const usersRef = dbRef(db, 'users/');
-      onValue(usersRef, (snapshot) => {
-        const data = snapshot.val();
-        const fieldWorkerList = data ? Object.values(data).filter(user => user.userType === 'field_worker') : [];
-        setFieldWorkers(fieldWorkerList);
-      });
-    };
-
-    fetchOrders();
+    fetchOrdersInfo();
     fetchCustomers();
-    fetchFieldWorkers();
   }, []);
 
-  const fetchFilesFromStorage = async (orderId) => {
-    const filesRef = storageRef(storage, `orders/${orderId}`);
-    const fileList = [];
-    try {
-      const result = await listAll(filesRef);
-      for (const itemRef of result.items) {
-        const url = await getDownloadURL(itemRef);
-        fileList.push({ name: itemRef.name, url });
-      }
-    } catch (error) {
-      console.error("Error fetching files from storage:", error);
-    }
-    return fileList;
-  };
-
-  const rowsWithCustomerNames = rows.map(order => {
-    const customer = customers.find(cust => cust.email === order.customerEmail);
+  // Map orders with client_id and customerName from OrdersInfo and Customers data
+  const rowsWithCustomerInfo = ordersInfo.map((order) => {
+    const customer = customers.find((cust) => cust.email === order.client_mail); // Match by email
     return {
       ...order,
-      customerName: customer ? customer.name : 'Unknown Customer'
+      customerName: customer ? customer.name : 'Unknown Customer',
+      client_id: customer ? customer.passportId : 'Unknown Client ID', // Use passportId as client_id
     };
   });
 
@@ -218,6 +199,12 @@ const AllWork = () => {
       ),
     },
     {
+      field: "client_id",
+      headerName: "Client ID",
+      flex: 1,
+      editable: false,
+    },
+    {
       field: "fieldStatus",
       headerName: "Field Status",
       flex: 1,
@@ -287,7 +274,7 @@ const AllWork = () => {
       <Header title="Completed Orders" subtitle="List of successfully completed orders" />
       <Box mt="20px" height="75vh">
         <DataGrid
-          rows={rowsWithCustomerNames}
+          rows={rowsWithCustomerInfo}
           columns={columns}
           editRowsModel={{}}
           onEditRowsModelChange={() => {}}

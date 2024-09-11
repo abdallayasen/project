@@ -5,9 +5,9 @@ const router = express.Router();
 
 router.post('/addOrder', async (req, res) => {
   try {
-    const { orderPrivateNumber, orderType, orderDate, customerName, employeeOfficeName, employeeFieldName, orderDescription } = req.body;
+    const { orderPrivateNumber, orderType, orderDate, customerEmail, employeeOfficeName, employeeFieldName, describeOrder } = req.body;
 
-    if (!orderPrivateNumber || !orderType || !orderDate || !customerName || !employeeOfficeName || !employeeFieldName || !orderDescription) {
+    if (!orderPrivateNumber || !orderType || !orderDate || !customerEmail || !employeeOfficeName || !employeeFieldName || !describeOrder) {
       return res.status(400).json({
         status: "FAILED",
         message: "Required fields are missing"
@@ -20,10 +20,10 @@ router.post('/addOrder', async (req, res) => {
       orderPrivateNumber,
       orderType,
       orderDate,
-      customerName,
+      customerEmail, // Save customer email for future joins
       employeeOfficeName,
       employeeFieldName,
-      orderDescription
+      describeOrder
     };
 
     newOrderRef.set(newOrder, (error) => {

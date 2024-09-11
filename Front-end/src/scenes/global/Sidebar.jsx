@@ -218,13 +218,7 @@ const Sidebar = () => {
             >
               Tools 
             </Typography>
-            <Item
-              title="Posts"
-              to="/manager/comments"
-              icon={<CommentIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
+          
             <Item
               title="Calendar"
               to="/manager/calendar"

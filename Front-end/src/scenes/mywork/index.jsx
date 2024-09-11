@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
   Box, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogTitle,
-  IconButton, Typography, Checkbox, MenuItem, Select, Button
+  IconButton, Typography, MenuItem, Select, Button
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { ref as dbRef, onValue, update } from 'firebase/database';
+import { ref as dbRef, onValue, update, remove } from 'firebase/database';
 import {
   ref as storageRef, uploadBytes, getDownloadURL, listAll
 } from 'firebase/storage';
@@ -30,23 +30,14 @@ const MyWork = () => {
   const { user } = useContext(UserContext);
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [fieldWorkers, setFieldWorkers] = useState([]);
-  const [editRowsModel, setEditRowsModel] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
-  const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false); // For confirming order completion
-  const [pendingRow, setPendingRow] = useState(null);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [orderChecklist, setOrderChecklist] = useState([]); // Checklist for manager to mark orders
+  const [orderChecklist, setOrderChecklist] = useState([]);
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
 
   useEffect(() => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-  
     const fetchOrders = async () => {
       const ordersRef = dbRef(db, 'orders/');
       onValue(ordersRef, async (snapshot) => {
@@ -62,14 +53,29 @@ const MyWork = () => {
               };
             }))
           : [];
-  
-        // Filter out completed orders before setting rows
-        const filteredOrders = orderList.filter((order) => !order.isCompleted); 
+
+        // Filter orders based on user type
+        const filteredOrders = orderList.filter(order => {
+          if (user.userType === 'manager') {
+            // For manager, show only orders where both statuses are "Success" and not completed
+            return (
+              order.officeStatus === 'Success' &&
+              order.fieldStatus === 'Success' &&
+              !order.isCompleted
+            );
+          }
+          // For other user types, exclude completed orders
+          return !order.isCompleted && (
+            (user.userType === 'employee_office' && order.employeeOfficeName === user.name) ||
+            (user.userType === 'field_worker' && order.employeeFieldName === user.name)
+          );
+        });
+
         setRows(filteredOrders);
-        setOrderChecklist(filteredOrders.map((order) => order.orderPrivateNumber)); // Populate checklist
+        setOrderChecklist(filteredOrders.map((order) => order.orderPrivateNumber));
       });
     };
-  
+
     const fetchCustomers = () => {
       const customersRef = dbRef(db, 'customers/');
       onValue(customersRef, (snapshot) => {
@@ -78,21 +84,10 @@ const MyWork = () => {
         setCustomers(customerList);
       });
     };
-  
-    const fetchFieldWorkers = () => {
-      const usersRef = dbRef(db, 'users/');
-      onValue(usersRef, (snapshot) => {
-        const data = snapshot.val();
-        const fieldWorkerList = data ? Object.values(data).filter(user => user.userType === 'field_worker') : [];
-        setFieldWorkers(fieldWorkerList);
-      });
-    };
-  
+
     fetchOrders();
     fetchCustomers();
-    fetchFieldWorkers();
   }, [user.name, user.userType]);
-  
 
   const fetchFilesFromStorage = async (orderId) => {
     const filesRef = storageRef(storage, `orders/${orderId}`);
@@ -117,13 +112,15 @@ const MyWork = () => {
     };
   });
 
-  // Handle order confirmation
   const handleConfirmOrderCompletion = () => {
     if (selectedOrder) {
       const orderId = selectedOrder.id;
       const orderRef = dbRef(db, `orders/${orderId}`);
-      update(orderRef, { isCompleted: true }).then(() => {
-        setRows((prevRows) => prevRows.filter((row) => row.id !== orderId)); // Hide from My Work page
+      update(orderRef, { 
+        isCompleted: true, 
+        markerColor: 'green' // Update marker color to green
+      }).then(() => {
+        setRows((prevRows) => prevRows.filter((row) => row.id !== orderId)); // Remove from My Work page
         setSnackbarMessage(`Order ${orderId} successfully completed and moved.`);
         setSnackbarOpen(true);
         setConfirmationDialogOpen(false);
@@ -134,18 +131,15 @@ const MyWork = () => {
     }
   };
   
-  
-  
 
   const updateOrderStatus = (orderId, type, newStatus) => {
     const orderRef = dbRef(db, `orders/${orderId}`);
     update(orderRef, { [type]: newStatus }).then(() => {
-      setRows((prevRows) => prevRows.map((row) => {
-        if (row.id === orderId) {
-          return { ...row, [type]: newStatus };
-        }
-        return row;
-      }));
+      setRows((prevRows) =>
+        prevRows.map((row) =>
+          row.id === orderId ? { ...row, [type]: newStatus } : row
+        )
+      );
       setSnackbarMessage(`Order ${orderId} ${type} updated to ${newStatus}`);
       setSnackbarOpen(true);
     }).catch((error) => {
@@ -161,139 +155,28 @@ const MyWork = () => {
     setSnackbarOpen(false);
   };
 
-  const handleEditDialogOpen = (row) => {
-    setPendingRow(row);
-    setEditDialogOpen(true);
-  };
-
-  const handleEditDialogClose = () => {
-    setEditDialogOpen(false);
-    setPendingRow(null);
-  };
-
-  const handleDeleteDialogOpen = (row) => {
-    setPendingDeleteRow(row);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteDialogClose = () => {
-    setDeleteDialogOpen(false);
-    setPendingDeleteRow(null);
-  };
-
   const handleCommentsDialogOpen = (row) => {
     setSelectedOrder(row);
     setCommentsDialogOpen(true);
   };
 
-  const handleCommentsDialogClose = () => {
-    setCommentsDialogOpen(false);
-    setSelectedOrder(null);
-  };
-
-  const handleConfirmEdit = () => {
-    const newRow = pendingRow;
-    const updatedRows = rows.map((row) => (row.id === newRow.id ? newRow : row));
-    setRows(updatedRows);
-    setSnackbarMessage('Row updated successfully');
-    setSnackbarOpen(true);
-    handleEditDialogClose();
-  };
-
-  const handleProcessRowUpdate = (newRow) => {
-    const updatedRows = rows.map((row) => (row.id === newRow.id ? newRow : row));
-    setRows(updatedRows);
-    return newRow;
-  };
-
-  const handleConfirmDelete = () => {
-    const orderId = pendingDeleteRow.id;
+  const handleDeleteRow = (row) => {
+    const orderId = row.id;
     const orderRef = dbRef(db, `orders/${orderId}`);
-    update(orderRef, { isCompleted: true }).then(() => {
-      setRows((prevRows) => prevRows.filter((row) => row.id !== orderId)); // Hide from My Work page
-      setSnackbarMessage('Row deleted successfully');
+    remove(orderRef).then(() => {
+      setRows((prevRows) => prevRows.filter((row) => row.id !== orderId));
+      setSnackbarMessage('Order deleted successfully');
       setSnackbarOpen(true);
-      handleDeleteDialogClose();
     }).catch((error) => {
       setSnackbarMessage(`Failed to delete order ${orderId}: ${error.message}`);
       setSnackbarOpen(true);
     });
   };
 
-  const handleDeleteRow = (row) => {
-    handleDeleteDialogOpen(row);
-  };
-
-  const handleOfficeCheckboxChange = async (orderId) => {
-    const orderRef = dbRef(db, `orders/${orderId}`);
-    await update(orderRef, { employeeOfficeName: user.name });
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === orderId ? { ...row, employeeOfficeName: user.name } : row
-      )
-    );
-  };
-
-  const handleFieldWorkerChange = async (orderId, fieldWorkerName) => {
-    const orderRef = dbRef(db, `orders/${orderId}`);
-    await update(orderRef, { employeeFieldName: fieldWorkerName });
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === orderId ? { ...row, employeeFieldName: fieldWorkerName } : row
-      )
-    );
-  };
-
-  const handleFileUpload = async (orderId, event) => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-      console.error("User is not authenticated. Please log in to upload files.");
-      setSnackbarMessage("User is not authenticated. Please log in to upload files.");
-      setSnackbarOpen(true);
-      return;
-    }
-
-    const file = event.target.files[0];
-    if (file) {
-      const fileStorageRef = storageRef(storage, `orders/${orderId}/${file.name}`);
-      try {
-        await uploadBytes(fileStorageRef, file);
-        const url = await getDownloadURL(fileStorageRef);
-        setRows((prevRows) =>
-          prevRows.map((row) =>
-            row.id === orderId
-              ? { ...row, files: [...(row.files || []), { name: file.name, url }] }
-              : row
-          )
-        );
-        setSnackbarMessage("File uploaded successfully.");
-        setSnackbarOpen(true);
-      } catch (error) {
-        setSnackbarMessage("Upload failed: " + error.message);
-        setSnackbarOpen(true);
-      }
-    }
-  };
-
-  const handleFileDownload = async (file) => {
-    try {
-      const link = document.createElement('a');
-      link.href = file.url;
-      link.download = file.name;
-      link.click();
-    } catch (error) {
-      setSnackbarMessage("Download failed: " + error.message);
-      setSnackbarOpen(true);
-    }
-  };
-
-  const handleDownloadAllFiles = async (orderId) => {
-    const files = rows.find(row => row.id === orderId)?.files || [];
-    for (const file of files) {
-      await handleFileDownload(file);
-    }
+  const handleProcessRowUpdate = (newRow) => {
+    const updatedRows = rows.map((row) => (row.id === newRow.id ? newRow : row));
+    setRows(updatedRows);
+    return newRow;
   };
 
   const renderFileIcons = (params) => {
@@ -326,14 +209,6 @@ const MyWork = () => {
     );
   };
 
-  const statusStyle = (status) => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    borderRadius: 2,
-  });
-
   const columns = [
     { field: "serialNumber", headerName: "Serial Number", flex: 0.5, editable: false },
     {
@@ -362,57 +237,18 @@ const MyWork = () => {
       field: "employeeOfficeName",
       headerName: "Office Employee",
       flex: 1,
-      renderCell: (params) => {
-        if (params.value) {
-          return (
-            <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              {params.value}
-            </Typography>
-          );
-        }
-        return (
-          <Checkbox
-            onChange={() => handleOfficeCheckboxChange(params.row.id)}
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-          />
-        );
-      },
     },
     {
       field: "employeeFieldName",
       headerName: "Field Employee",
       flex: 1,
-      renderCell: (params) => {
-        if (params.value) {
-          return (
-            <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              {params.value}
-            </Typography>
-          );
-        }
-        return (
-          <Select
-            value={params.value || ''}
-            onChange={(e) => handleFieldWorkerChange(params.row.id, e.target.value)}
-            displayEmpty
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-          >
-            <MenuItem value="" disabled>Select Field Worker</MenuItem>
-            {fieldWorkers.map((worker) => (
-              <MenuItem key={worker.name} value={worker.name}>
-                {worker.name}
-              </MenuItem>
-            ))}
-          </Select>
-        );
-      },
     },
     {
       field: "fieldStatus",
       headerName: "Field Status",
       flex: 1,
       renderCell: (params) => (
-        <Box sx={statusStyle(params.value)}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <StatusButton
             initialStatus={params.value}
             type="fieldStatus"
@@ -428,7 +264,7 @@ const MyWork = () => {
       headerName: "Office Status",
       flex: 1,
       renderCell: (params) => (
-        <Box sx={statusStyle(params.value)}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <StatusButton
             initialStatus={params.value}
             type="officeStatus"
@@ -493,12 +329,64 @@ const MyWork = () => {
     },
   ];
 
+  const handleDownloadAllFiles = async (orderId) => {
+    const files = rows.find(row => row.id === orderId)?.files || [];
+    for (const file of files) {
+      await handleFileDownload(file);
+    }
+  };
+
+  const handleFileUpload = async (orderId, event) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      setSnackbarMessage("User is not authenticated. Please log in to upload files.");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const file = event.target.files[0];
+    if (file) {
+      const fileStorageRef = storageRef(storage, `orders/${orderId}/${file.name}`);
+      try {
+        await uploadBytes(fileStorageRef, file);
+        const url = await getDownloadURL(fileStorageRef);
+        setRows((prevRows) =>
+          prevRows.map((row) =>
+            row.id === orderId
+              ? { ...row, files: [...(row.files || []), { name: file.name, url }] }
+              : row
+          )
+        );
+        setSnackbarMessage("File uploaded successfully.");
+        setSnackbarOpen(true);
+      } catch (error) {
+        setSnackbarMessage("Upload failed: " + error.message);
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
+  const handleFileDownload = async (file) => {
+    try {
+      const link = document.createElement('a');
+      link.href = file.url;
+      link.download = file.name;
+      link.click();
+    } catch (error) {
+      setSnackbarMessage("Download failed: " + error.message);
+      setSnackbarOpen(true);
+    }
+  };
+
   return (
     <Box m="20px">
       <Header
         title="My Work"
         subtitle="List of works assigned to you"
       />
+
       <Box display="flex" flexDirection="row" alignItems="center" mt={2} mb={2}>
         {user.userType === 'manager' && (
           <>
@@ -565,8 +453,8 @@ const MyWork = () => {
         <DataGrid
           rows={rowsWithCustomerNames}
           columns={columns}
-          editRowsModel={editRowsModel}
-          onEditRowsModelChange={setEditRowsModel}
+          editRowsModel={{}}
+          onEditRowsModelChange={() => {}}
           processRowUpdate={handleProcessRowUpdate}
           slots={{ toolbar: GridToolbar }}
         />
@@ -580,46 +468,6 @@ const MyWork = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-
-      <Dialog
-        open={editDialogOpen}
-        onClose={handleEditDialogClose}
-      >
-        <DialogTitle>Confirm Edit</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to save the changes?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleEditDialogClose} sx={{ backgroundColor: colors.greenAccent[400] }}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmEdit} sx={{ backgroundColor: colors.greenAccent[400] }}>
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteDialogClose}
-      >
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete the row?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteDialogClose} sx={{ backgroundColor: colors.greenAccent[400] }}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmDelete} sx={{ backgroundColor: colors.greenAccent[400] }}>
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Dialog
         open={confirmationDialogOpen}
@@ -643,7 +491,7 @@ const MyWork = () => {
 
       <Dialog
         open={commentsDialogOpen}
-        onClose={handleCommentsDialogClose}
+        onClose={() => setCommentsDialogOpen(false)}
         maxWidth="md"
         fullWidth
         PaperProps={{
@@ -664,7 +512,7 @@ const MyWork = () => {
           {selectedOrder && <Comments orderPrivateNumber={selectedOrder.orderPrivateNumber} />}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCommentsDialogClose} color="primary">
+          <Button onClick={() => setCommentsDialogOpen(false)} color="primary">
             Close
           </Button>
         </DialogActions>

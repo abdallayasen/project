@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; // Firebase Authentication
 import './SignUp.css';
 
 const SignUp = ({ onClose }) => {
   const [name, setName] = useState('');
-  const [passportId, setPassportId] = useState(''); // Changed to passportId
+  const [passportId, setPassportId] = useState(''); 
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,6 +16,8 @@ const SignUp = ({ onClose }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  const auth = getAuth(); // Initialize Firebase Authentication
 
   const handleUserTypeChange = (e) => {
     setUserType(e.target.value);
@@ -39,35 +42,34 @@ const SignUp = ({ onClose }) => {
     }
 
     try {
+      // Step 1: Create user in Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // Step 2: Save the user information in Firebase Realtime Database
+      const userData = {
+        name,
+        passportId,
+        phone,
+        email,
+        userType,
+        address,
+        city,
+        startDate,
+        endDate
+      };
+
       if (userType === 'customer') {
-        const response = await axios.post('http://localhost:8000/addCustomer', {
-          name,
-          passportId, // Changed to passportId
-          phone,
-          email,
-          password,
-          confirmationPassword,
-        });
-        console.log('Customer added:', response.data);
+        await axios.post('http://localhost:8000/addCustomer', userData);
         alert('Customer successfully added!');
       } else {
-        const response = await axios.post('http://localhost:8000/addUser', {
-          name,
-          passportId, // Changed to passportId
-          phone,
-          email,
-          password,
-          userType,
-          address,
-          city,
-          startDate,
-          endDate,
-        });
-        console.log('User added:', response.data);
+        await axios.post('http://localhost:8000/addUser', userData);
         alert('User successfully added!');
       }
+
+      // Reset form and close the modal
       setName('');
-      setPassportId(''); // Changed to passportId
+      setPassportId('');
       setPhone('');
       setEmail('');
       setPassword('');
@@ -105,8 +107,8 @@ const SignUp = ({ onClose }) => {
             <label>Passport ID:</label>
             <input
               type="text"
-              value={passportId} // Changed to passportId
-              onChange={(e) => setPassportId(e.target.value)} // Changed to passportId
+              value={passportId}
+              onChange={(e) => setPassportId(e.target.value)}
               required
             />
           </div>

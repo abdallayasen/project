@@ -18,7 +18,11 @@ const OrdersInfo = () => {
     const ordersRef = ref(db, 'orders/');
     onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
-      const ordersList = data ? Object.keys(data).map((key) => ({ id: key, ...data[key] })) : [];
+      const ordersList = data ? Object.keys(data).map((key) => ({
+        id: key,
+        ...data[key],
+        client_mail: data[key].customerEmail, // Add client_mail field
+      })) : [];
       setOrders(ordersList);
     });
 
@@ -31,12 +35,13 @@ const OrdersInfo = () => {
     });
   }, []);
 
-  // Join orders with customers to get customer name based on email
+  // Join orders with customers to get client_id (passportId)
   const ordersWithCustomerNames = orders.map(order => {
     const customer = customers.find(cust => cust.email === order.customerEmail);
     return {
       ...order,
-      customerName: customer ? customer.name : 'Unknown Customer'
+      customerName: customer ? customer.name : 'Unknown Customer',
+      client_id: customer ? customer.passportId : 'Unknown ID', // Use passportId as client_id
     };
   });
 
@@ -63,6 +68,11 @@ const OrdersInfo = () => {
       flex: 1,
     },
     {
+      field: 'client_id',
+      headerName: 'Client ID',
+      flex: 1, // Display client_id from passportId
+    },
+    {
       field: 'employeeOfficeName',
       headerName: 'Employee Office Name',
       flex: 1,
@@ -72,6 +82,17 @@ const OrdersInfo = () => {
       headerName: 'Employee Field Name',
       flex: 1,
     },
+    {
+      field: 'x',
+      headerName: 'X Coordinate',
+      flex: 1,
+    },
+    {
+      field: 'y',
+      headerName: 'Y Coordinate',
+      flex: 1,
+    }
+,    
     {
       field: 'describeOrder',
       headerName: 'Order Description',

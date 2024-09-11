@@ -16,8 +16,11 @@ const Customer = () => {
     const customersRef = ref(db, 'customers/');
     onValue(customersRef, (snapshot) => {
       const data = snapshot.val();
-      const customerList = data ? Object.keys(data).map((key, index) => ({ id: index + 1, ...data[key] })) : [];
-      console.log("Fetched customers:", customerList); // Debugging line
+      const customerList = data ? Object.keys(data).map((key, index) => ({
+        id: index + 1,
+        ...data[key],
+        client_id: data[key].passportId, // Use passportId as client_id
+      })) : [];
       setCustomers(customerList);
     });
   }, []);
@@ -45,13 +48,14 @@ const Customer = () => {
       headerName: 'Email',
       flex: 1,
     },
+    
   ];
 
   return (
     <Box m="20px">
       <Header
-        title="Client information"
-        subtitle="Current Clients "
+        title="Client Information"
+        subtitle="Current Clients"
       />
       <Box
         m="40px 0 0 0"
@@ -92,7 +96,6 @@ const Customer = () => {
         />
       </Box>
     </Box>
-    
   );
 };
 
