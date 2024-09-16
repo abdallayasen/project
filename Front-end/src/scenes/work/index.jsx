@@ -23,6 +23,7 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { UserContext } from "../../context/UserContext";
 import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
+import Badge from '@mui/material/Badge';
 
 const Work = () => {
   const theme = useTheme();
@@ -33,7 +34,7 @@ const Work = () => {
   const [fieldWorkers, setFieldWorkers] = useState([]);  // List of field workers fetched from the database
   const [editRowsModel, setEditRowsModel] = useState({});  // State to manage row editing
   const [snackbarOpen, setSnackbarOpen] = useState(false);  // Snackbar state to show notifications
-  const [snackbarMessage, setSnackbarMessage] = useState('');  // Message to display in the snackbar
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);  // Dialog for editing rows
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);  // Dialog for deleting rows
@@ -45,8 +46,10 @@ const Work = () => {
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);  // State for pending status updates
   const [refundedStatus, setRefundedStatus] = useState(null);  // Holds the refunded status of the row
   const [selectedOrder, setSelectedOrder] = useState(null);  // The selected order for comments
+  const [postCounts, setPostCounts] = useState({}); // Holds the post counts for each order
 
   useEffect(() => {
+    // Function to fetch orders and their associated files
     const fetchOrders = async () => {
       const ordersRef = dbRef(db, 'orders/');
       onValue(ordersRef, async (snapshot) => {
@@ -64,13 +67,14 @@ const Work = () => {
               })
             )
           : [];
-    
+  
         // Filter out completed orders before setting rows
-        const activeOrders = orderList.filter((order) => !order.isCompleted); 
-        setRows(activeOrders);  // Only show active orders (not completed)
+        const activeOrders = orderList.filter((order) => !order.isCompleted);
+        setRows(activeOrders); // Only show active orders (not completed)
       });
     };
-    
+  
+    // Function to fetch customer data
     const fetchCustomers = () => {
       const customersRef = dbRef(db, 'customers/');
       onValue(customersRef, (snapshot) => {
@@ -79,7 +83,8 @@ const Work = () => {
         setCustomers(customerList);
       });
     };
-
+  
+    // Function to fetch field worker data
     const fetchFieldWorkers = () => {
       const usersRef = dbRef(db, 'users/');
       onValue(usersRef, (snapshot) => {
@@ -88,11 +93,34 @@ const Work = () => {
         setFieldWorkers(fieldWorkerList);
       });
     };
-
+  
+    // Function to fetch post counts for each order (for displaying in the badge)
+    const fetchPostCounts = async () => {
+      const postsRef = dbRef(db, 'posts');
+      onValue(postsRef, (snapshot) => {
+        const data = snapshot.val();
+        const counts = {};
+        if (data) {
+          Object.keys(data).forEach((postId) => {
+            const post = data[postId];
+            const orderPrivateNumber = post.orderPrivateNumber;
+            if (orderPrivateNumber) {
+              counts[orderPrivateNumber] = (counts[orderPrivateNumber] || 0) + 1;
+            }
+          });
+        }
+        setPostCounts(counts);
+      });
+    };
+  
+    // Call all the fetch functions
     fetchOrders();
     fetchCustomers();
     fetchFieldWorkers();
+    fetchPostCounts(); // Add this to ensure the post count data is fetched as well
   }, []);
+
+  
 
   // Function to fetch files from Firebase Storage based on order ID
   const fetchFilesFromStorage = async (orderId) => {
@@ -379,10 +407,28 @@ const Work = () => {
 
   const handleDownloadAllFiles = async (orderId) => {
     const files = rows.find(row => row.id === orderId)?.files || [];
+    if (files.length === 0) {
+      setSnackbarMessage("No files to download.");
+      setSnackbarOpen(true);
+      return;
+    }
+  
     for (const file of files) {
-      await handleFileDownload(file);
+      try {
+        const response = await fetch(file.url); // Fetch the file from the URL
+        const blob = await response.blob(); // Convert response to blob
+        const link = document.createElement('a'); // Create a link element
+        link.href = URL.createObjectURL(blob); // Create object URL from blob
+        link.download = file.name; // Set the download attribute with file name
+        link.click(); // Programmatically click the link to trigger download
+      } catch (error) {
+        console.error(`Error downloading file ${file.name}:`, error);
+        setSnackbarMessage(`Failed to download ${file.name}`);
+        setSnackbarOpen(true);
+      }
     }
   };
+  
 
   // Render file icons in the table
   const renderFileIcons = (params) => {
@@ -393,13 +439,13 @@ const Work = () => {
           let icon;
           const lowerCaseFile = file.name.toLowerCase();
           if (lowerCaseFile.endsWith('.pdf')) {
-            icon = <PictureAsPdfIcon />;
+            icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />;
           } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg')) {
-            icon = <ImageIcon sx={{ color: 'white', fontSize: 20 }} />;
+            icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
-            icon = <VideoLibraryIcon />;
+            icon = <VideoLibraryIcon  sx={{ color: colors.blueAccent[500] }}/>;
           } else {
-            icon = <CloudDownloadIcon sx={{ color: 'white' }} />;
+            icon = <CloudDownloadIcon sx={{ color: colors.greenAccent[500]}} />;
           }
 
           return (
@@ -539,71 +585,93 @@ const Work = () => {
       flex: 1,
       renderCell: renderFileIcons,
     },
+
+
     {
       field: "comments",
-      headerName: "Comments",
+      headerName: "Posts",
       flex: 1,
       renderCell: (params) => (
         <Box 
           sx={{ 
             display: 'flex', 
-            alignItems: 'flex-start', 
+            alignItems: 'center', 
             justifyContent: 'center', 
-            height: '100%' 
+            height: '100%' ,
+            color:"green"
           }}
         >
-          <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
-            <CommentIcon />
-          </IconButton>
+          <Badge
+            badgeContent={postCounts[params.row.orderPrivateNumber] || 0} // Ensure post count is displayed
+            color="error"
+            overlap="circular"
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
+              <CommentIcon sx={{ color: colors.greenAccent[500]}}/>
+            </IconButton>
+          </Badge>
         </Box>
       ),
       sortable: false,
       filterable: false,
     }
+    
+    
+
+
     ,
     {
-      field: "action",
-      headerName: "Action",
-      flex: 1,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
-          {/* Delete Button */}
-          <IconButton
-            onClick={() => handleDeleteRow(params.row)}
-            color="warning"
-            disabled={user.userType === 'field_worker'} // Disable delete for field workers
-          >
-            <DeleteIcon />
-          </IconButton>
-          
-          {/* Upload Button */}
-          <IconButton component="label" color="primary" disabled={!isUserResponsible(params.row)}>
-            <CloudUploadIcon sx={{ color: 'white' }} />
-            <input
-              type="file"
-              hidden
-              onChange={(event) => handleFileUpload(params.row.id, event)}
-            />
-          </IconButton>
-          
-          {/* Download All Files Button */}
-          <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
-            <CloudDownloadIcon sx={{ color: 'white' }} />
-          </IconButton>
-        </Box>
-      ),
-      sortable: false,
-      filterable: false,
+      
+        field: "action",
+        headerName: "Action",
+        flex: 1,
+        renderCell: (params) => (
+          <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
+            {/* Delete Button */}
+            <IconButton
+              onClick={() => handleDeleteRow(params.row)}
+              color="warning"
+              disabled={user.userType === 'field_worker'}
+            >
+              <DeleteIcon />
+            </IconButton>
+            
+            {/* Upload Button */}
+            <IconButton component="label" color="primary" disabled={!isUserResponsible(params.row)}>
+              <CloudUploadIcon sx={{ color: colors.greenAccent[500] }} />
+              <input
+                type="file"
+                hidden
+                onChange={(event) => handleFileUpload(params.row.id, event)}
+              />
+            </IconButton>
+            
+            {/* Download All Files Button */}
+            <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
+              <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />
+            </IconButton>
+          </Box>
+        ),
+        sortable: false,
+        filterable: false,
+      
+      
     }
     ,
   ];
 
   return (
-    <Box m="20px">
-      <Header
-        title="Work Management"
-        subtitle="List of work status and observation"
-      />
+    <Box 
+   
+  >
+    <Header
+      title="Work Management"
+      subtitle="List of work status and observation"
+    />
       <Box
         m="40px 0 0 0"
         height="75vh"

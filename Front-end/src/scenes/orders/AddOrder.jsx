@@ -1,3 +1,4 @@
+// src/scenes/orders/AddOrder.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box, Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Autocomplete
@@ -31,20 +32,19 @@ const generateUniqueOrderPrivateNumber = async () => {
   return orderPrivateNumber;
 };
 
-const AddOrder = () => {
+const AddOrder = ({ onClose }) => {
   const [orderType, setOrderType] = useState('');
   const [orderDate, setOrderDate] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [describeOrder, setDescribeOrder] = useState('');
   const [customers, setCustomers] = useState([]);
-  const [open, setOpen] = useState(true); // Control the Dialog visibility
   const [filteredEmails, setFilteredEmails] = useState([]);
+  const [x, setX] = useState('');  // New state for x-coordinate
+  const [y, setY] = useState('');  // New state for y-coordinate
   const navigate = useNavigate();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-// Add x and y fields to the order creation form
-const [x, setX] = useState('');  // New state for x-coordinate
-const [y, setY] = useState('');  // New state for y-coordinate
+
   useEffect(() => {
     const fetchCustomers = () => {
       const customersRef = ref(db, 'customers/');
@@ -61,11 +61,12 @@ const [y, setY] = useState('');  // New state for y-coordinate
 
  // Update the handleAddOrder function to include x and y coordinates
 const handleAddOrder = async () => {
+  // Validation: Ensure all fields are filled
   if (!orderType || !orderDate || !customerEmail || !describeOrder || !x || !y) {
     alert('Please fill in all fields.');
-    return;
+    return; // Stop the execution if validation fails
   }
-  
+    
     const orderPrivateNumber = await generateUniqueOrderPrivateNumber();
   
     const newOrder = {
@@ -83,8 +84,7 @@ const handleAddOrder = async () => {
       const ordersRef = ref(db, 'orders/');
       await push(ordersRef, newOrder);
       alert('Order added successfully!');
-      navigate('/dashboard');
-      setOpen(false);
+      onClose();  // Close the dialog
     } catch (error) {
       console.error('Error adding order:', error);
       alert('Error adding order. Please try again.');
@@ -92,8 +92,8 @@ const handleAddOrder = async () => {
   };
 
   const handleClose = () => {
-    setOpen(false);
-    navigate('/orders-info'); // Redirect to orders page if dialog is closed
+    onClose();
+    navigate('/manager/orders');  // Navigate to a valid page (replace with your route)
   };
 
   // Filter email suggestions based on input
@@ -107,8 +107,8 @@ const handleAddOrder = async () => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ backgroundColor: colors.primary[400], color: colors.grey[100] }}>
+    <Dialog open={true} onClose={handleClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ backgroundColor: colors.primary[400], backgroundColor: colors.greenAccent[500],textAlign: 'center' , fontSize: '24px'  }}>
         Add New Order
       </DialogTitle>
       <DialogContent sx={{ backgroundColor: colors.primary[400], color: colors.grey[100], padding: '20px' }}>
@@ -118,6 +118,7 @@ const handleAddOrder = async () => {
             value={orderType}
             onChange={(e) => setOrderType(e.target.value)}
             fullWidth
+            sx={{ mt: 2 }}
             InputLabelProps={{
               style: { color: colors.grey[100] }, // Input label color
             }}
@@ -159,31 +160,30 @@ const handleAddOrder = async () => {
             )}
           />
 
-// Add the input fields for x and y in the form
-<TextField
-  label="X Coordinate"
-  value={x}
-  onChange={(e) => setX(e.target.value)}
-  fullWidth
-  InputLabelProps={{
-    style: { color: colors.grey[100] }, // Input label color
-  }}
-  InputProps={{
-    style: { color: colors.grey[100] }, // Text color
-  }}
-/>
-<TextField
-  label="Y Coordinate"
-  value={y}
-  onChange={(e) => setY(e.target.value)}
-  fullWidth
-  InputLabelProps={{
-    style: { color: colors.grey[100] }, // Input label color
-  }}
-  InputProps={{
-    style: { color: colors.grey[100] }, // Text color
-  }}
-/>
+          <TextField
+            label="X Coordinate"
+            value={x}
+            onChange={(e) => setX(e.target.value)}
+            fullWidth
+            InputLabelProps={{
+              style: { color: colors.grey[100] }, // Input label color
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] }, // Text color
+            }}
+          />
+          <TextField
+            label="Y Coordinate"
+            value={y}
+            onChange={(e) => setY(e.target.value)}
+            fullWidth
+            InputLabelProps={{
+              style: { color: colors.grey[100] }, // Input label color
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] }, // Text color
+            }}
+          />
           <TextField
             label="Order Description"
             value={describeOrder}

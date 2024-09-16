@@ -32,17 +32,20 @@ const Geography = () => {
     libraries: ["places"],
   });
 
-  // Fetch the orders and customers data
+  // Fetch customers once on component mount
   useEffect(() => {
-    // Fetch customers
     const customersRef = dbRef(db, 'customers/');
     onValue(customersRef, (snapshot) => {
       const customerData = snapshot.val();
       const customerList = customerData ? Object.values(customerData) : [];
       setCustomers(customerList);
     });
+  }, []);
 
-    // Fetch orders and set markers with full data
+  // Fetch orders and set markers once customers are loaded
+  useEffect(() => {
+    if (customers.length === 0) return; // Ensure customers are loaded before fetching orders
+
     const ordersRef = dbRef(db, 'orders/');
     onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
@@ -78,7 +81,7 @@ const Geography = () => {
         : [];
       setMarkers(fetchedOrders);
     });
-  }, [customers]);
+  }, [customers]); // Only run this effect after customers are loaded
 
   // Filter markers based on color and date filters
   useEffect(() => {
@@ -103,8 +106,10 @@ const Geography = () => {
   };
 
   return (
-    <Box m="20px">
-      <Header title="Geography Vizo Map" subtitle="Visualize locations for current and previous work orders" />
+<Box 
+    m="20px" 
+   
+  >      <Header title="Geography Vizo Map" subtitle="Visualize locations for current and previous work orders" />
 
       {/* Filter Controls */}
       <Box display="flex" gap={2} mb={4}>
@@ -120,16 +125,15 @@ const Geography = () => {
         </Select>
 
         <Button
-  variant={dateFilter ? "contained" : "outlined"}
-  onClick={() => setDateFilter((prev) => !prev)}
-  sx={{
-    color: 'white', // Set text color to white
-    borderColor: 'white', // Ensure the outline also appears in white when in "outlined" mode
-  }}
->
-  {dateFilter ? "Show All" : "Show Oldest 10 Orders"}
-</Button>
-
+          variant={dateFilter ? "contained" : "outlined"}
+          onClick={() => setDateFilter((prev) => !prev)}
+          sx={{
+            color: '#4caf50', // Set text color to white
+            borderColor: '#4caf50', // Ensure the outline also appears in white when in "outlined" mode
+          }}
+        >
+          {dateFilter ? "Show All" : "Show Oldest 10 Orders"}
+        </Button>
       </Box>
 
       {/* Google Map */}
@@ -140,19 +144,20 @@ const Geography = () => {
             center={center}
             zoom={10}
           >
-            {filteredMarkers.map((marker) => (
-              <Marker
-                key={marker.id}
-                position={marker.position}
-                label={{
-                  text: `${marker.position.lat.toFixed(4)}, ${marker.position.lng.toFixed(4)}`,
-                  color: marker.color,
-                }}
-                icon={{
-                  url: `http://maps.google.com/mapfiles/ms/icons/${marker.color}-dot.png`,  // Marker color based on assigned worker
-                }}
-              />
-            ))}
+            {filteredMarkers.map((marker, index) => (
+  <Marker
+    key={marker.id || index}  // Ensure each marker has a unique key
+    position={marker.position}
+    label={{
+      text: `${marker.position.lat.toFixed(4)}, ${marker.position.lng.toFixed(4)}`,
+      color: marker.color,
+    }}
+    icon={{
+      url: `http://maps.google.com/mapfiles/ms/icons/${marker.color}-dot.png`,  // Marker color based on assigned worker
+    }}
+  />
+))}
+
           </GoogleMap>
         )}
       </Box>

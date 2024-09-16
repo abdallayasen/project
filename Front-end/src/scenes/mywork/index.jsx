@@ -23,8 +23,10 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { UserContext } from "../../context/UserContext";
 import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
+import Badge from '@mui/material/Badge';
 
 const MyWork = () => {
+  
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { user } = useContext(UserContext);
@@ -36,6 +38,7 @@ const MyWork = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderChecklist, setOrderChecklist] = useState([]);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [postCounts, setPostCounts] = useState({}); // Initialize postCounts and setPostCounts
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -53,7 +56,7 @@ const MyWork = () => {
               };
             }))
           : [];
-
+  
         // Filter orders based on user type
         const filteredOrders = orderList.filter(order => {
           if (user.userType === 'manager') {
@@ -70,12 +73,12 @@ const MyWork = () => {
             (user.userType === 'field_worker' && order.employeeFieldName === user.name)
           );
         });
-
+  
         setRows(filteredOrders);
         setOrderChecklist(filteredOrders.map((order) => order.orderPrivateNumber));
       });
     };
-
+  
     const fetchCustomers = () => {
       const customersRef = dbRef(db, 'customers/');
       onValue(customersRef, (snapshot) => {
@@ -84,10 +87,31 @@ const MyWork = () => {
         setCustomers(customerList);
       });
     };
-
+  
+    // Function to fetch post counts for each order (for displaying in the badge)
+    const fetchPostCounts = async () => {
+      const postsRef = dbRef(db, 'posts');
+      onValue(postsRef, (snapshot) => {
+        const data = snapshot.val();
+        const counts = {};
+        if (data) {
+          Object.keys(data).forEach((postId) => {
+            const post = data[postId];
+            const orderPrivateNumber = post.orderPrivateNumber;
+            if (orderPrivateNumber) {
+              counts[orderPrivateNumber] = (counts[orderPrivateNumber] || 0) + 1;
+            }
+          });
+        }
+        setPostCounts(counts);
+      });
+    };
+  
     fetchOrders();
     fetchCustomers();
+    fetchPostCounts(); // Added to fetch the post counts for the badge
   }, [user.name, user.userType]);
+  
 
   const fetchFilesFromStorage = async (orderId) => {
     const filesRef = storageRef(storage, `orders/${orderId}`);
@@ -187,13 +211,13 @@ const MyWork = () => {
           let icon;
           const lowerCaseFile = file.name.toLowerCase();
           if (lowerCaseFile.endsWith('.pdf')) {
-            icon = <PictureAsPdfIcon />;
+            icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }}/>;
           } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg')) {
-            icon = <ImageIcon sx={{ color: 'white', fontSize: 20 }} />;
+            icon = <ImageIcon sx={{ color: "Red" , fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
-            icon = <VideoLibraryIcon />;
+            icon = <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />;
           } else {
-            icon = <CloudDownloadIcon sx={{ color: 'white' }} />;
+            icon = <CloudDownloadIcon sx={{ color: colors.greenAccent[500]  }} />;
           }
 
           return (
@@ -281,27 +305,42 @@ const MyWork = () => {
       flex: 1,
       renderCell: renderFileIcons,
     },
+
+
+
     {
       field: "comments",
-      headerName: "Comments",
+      headerName: "Posts",
       flex: 1,
       renderCell: (params) => (
         <Box 
           sx={{ 
             display: 'flex', 
-            alignItems: 'flex-start', 
+            alignItems: 'center', 
             justifyContent: 'center', 
-            height: '100%' 
+            height: '100%' ,
+            color:"green"
           }}
         >
-          <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
-            <CommentIcon />
-          </IconButton>
+          <Badge
+            badgeContent={postCounts[params.row.orderPrivateNumber] || 0} // Ensure post count is displayed
+            color="error"
+            overlap="circular"
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
+              <CommentIcon sx={{ color: colors.greenAccent[500]}}/>
+            </IconButton>
+          </Badge>
         </Box>
       ),
       sortable: false,
       filterable: false,
-    },
+    }
+    ,
     {
       field: "action",
       headerName: "Action",
@@ -312,7 +351,7 @@ const MyWork = () => {
             <DeleteIcon />
           </IconButton>
           <IconButton component="label" color="primary">
-            <CloudUploadIcon sx={{ color: 'white' }} />
+            <CloudUploadIcon sx={{ color: colors.greenAccent[500] }} />
             <input
               type="file"
               hidden
@@ -320,7 +359,7 @@ const MyWork = () => {
             />
           </IconButton>
           <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
-            <CloudDownloadIcon sx={{ color: 'white' }} />
+            <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }}/>
           </IconButton>
         </Box>
       ),
@@ -381,8 +420,10 @@ const MyWork = () => {
   };
 
   return (
-    <Box m="20px">
-      <Header
+<Box 
+    m="20px" 
+   
+  >      <Header
         title="My Work"
         subtitle="List of works assigned to you"
       />

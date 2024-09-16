@@ -13,6 +13,7 @@ import AddOrder from './scenes/orders/AddOrder';
 import Work from './scenes/work';
 import MyWork from './scenes/mywork';
 import { UserProvider } from './context/UserContext';
+import MyCalendar  from './scenes/Calendar_page/Calendar';
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -22,6 +23,7 @@ function App() {
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
+          
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUp />} />
@@ -33,6 +35,7 @@ function App() {
             <Route path="/work-management" element={<Work />} />
             <Route path="/my-work" element={<MyWork />} />
             <Route path="/" element={<Navigate to="/login" />} />
+            <Route path="/calendar" element={<MyCalendar />} />
             <Route path="*" element={<div>404 - Page Not Found</div>} />
 
           </Routes>

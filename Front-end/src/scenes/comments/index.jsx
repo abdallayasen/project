@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
-  Box, Card, CardHeader, CardMedia, CardContent, CardActions,
-  Collapse, Avatar, Typography, TextField, Button, IconButton, Dialog,
-  DialogActions, DialogContent, DialogTitle
+  Box, Card, CardHeader, CardContent, CardActions, Collapse, Avatar, Typography,
+  TextField, Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -11,7 +10,7 @@ import { styled } from '@mui/material/styles';
 import { useTheme } from "@mui/material";
 import AddPost from '../../components/AddPost';
 import { db } from '../../firebase';
-import { ref, set, remove, onValue, get } from 'firebase/database';
+import { ref, set, remove, onValue, push } from 'firebase/database';
 import { tokens } from "../../theme";
 import { UserContext } from '../../context/UserContext';
 
@@ -36,9 +35,7 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
   const [posts, setPosts] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
-  const [postToEdit, setPostToEdit] = useState(null);
   const [likedPosts, setLikedPosts] = useState({});
 
   const randomColor = () => {
@@ -46,17 +43,18 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  // Fetch posts that match the relevant `orderPrivateNumber`
+  // Fetch posts that match the relevant `orderPrivateNumber` and fetch comments properly
   useEffect(() => {
     const postsRef = ref(db, 'posts');
     onValue(postsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const filteredPosts = Object.entries(data)
-          .filter(([id, post]) => post.orderPrivateNumber === orderPrivateNumber) // Filter by `orderPrivateNumber`
+          .filter(([id, post]) => post.orderPrivateNumber === orderPrivateNumber)
           .map(([id, post]) => ({
             id,
             ...post,
+            comments: post.comments ? Object.values(post.comments) : [],
             user: post.user || { name: "Unknown User" },
             avatarColor: randomColor(),
           }));
@@ -77,55 +75,24 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
   const handleAddComment = async (postId) => {
     if (newComment.trim() !== "") {
       try {
-        const postRef = ref(db, `posts/${postId}`);
-        const snapshot = await get(postRef);
-        if (!snapshot.exists()) {
-          console.error("Post not found");
-          return;
-        }
+        const postRef = ref(db, `posts/${postId}/comments`);
+        const newCommentRef = push(postRef);
 
-        const post = snapshot.val();
-        const updatedPost = {
-          ...post,
-          comments: [
-            ...(post.comments || []),
-            {
-              id: Date.now(),
-              text: newComment,
-              user: {
-                name: user.name,
-                avatar: user.avatar || "/path/to/default/avatar.png",
-              },
-            },
-          ],
+        const commentData = {
+          content: newComment,
+          date: new Date().toISOString(),
+          user: {
+            name: user.name,
+            avatar: user.avatar || '/assets/user.png',
+          },
         };
 
-        await set(postRef, updatedPost);
+        await set(newCommentRef, commentData);
         setNewComment("");
       } catch (error) {
         console.error("Failed to add comment:", error);
       }
     }
-  };
-
-  // Add a new post
-  const handleAddPost = async (newPost) => {
-    if (!user) {
-      alert("User data is missing. Please ensure you are logged in.");
-      return;
-    }
-    const newPostRef = ref(db, 'posts').push();
-    const postWithUserData = {
-      ...newPost,
-      user: {
-        name: user.name,
-      },
-      date: new Date().toISOString(),
-      orderPrivateNumber, // Include the relevant `orderPrivateNumber`
-    };
-
-    await set(newPostRef, postWithUserData);
-    setPosts([{ id: newPostRef.key, ...postWithUserData }, ...posts]);
   };
 
   // Delete a post
@@ -135,16 +102,6 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
       await remove(postRef);
       setPosts(posts.filter(post => post.id !== postToDelete.id));
       setOpenConfirm(false);
-    }
-  };
-
-  // Edit a post
-  const handleEditPost = async () => {
-    if (postToEdit) {
-      const postRef = ref(db, `posts/${postToEdit.id}`);
-      await set(postRef, postToEdit);
-      setPosts(posts.map(post => (post.id === postToEdit.id ? postToEdit : post)));
-      setOpenEdit(false);
     }
   };
 
@@ -165,7 +122,7 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
     <Box display="flex" flexDirection="column" alignItems="center" spacing={2}>
       <Box mb={2} mt={3}>
         {/* AddPost component allows users to add posts */}
-        <AddPost orderPrivateNumber={orderPrivateNumber} addPost={handleAddPost} />
+        <AddPost orderPrivateNumber={orderPrivateNumber} />
       </Box>
       {posts.map((post) => (
         <Card key={post.id} sx={{ maxWidth: 800, width: '100%', boxShadow: 5, padding: 2, mb: 2 }}>
@@ -177,7 +134,6 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
                 onClick={(e) => {
                   e.stopPropagation();
                   setPostToDelete(post);
-                  setPostToEdit(post);
                   setOpenConfirm(true);
                 }}
               >
@@ -187,30 +143,27 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
             title={post.user?.name || "Unknown User"}
             subheader={new Date(post.date).toLocaleDateString()}
           />
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', padding: 2 }}>
-            {post.image && (
-              <CardMedia
-                component="img"
-                image={post.image}
-                alt="Post Image"
-                sx={{ cursor: 'pointer', width: '100%', height: 250, objectFit: 'cover', margin: '10px 0' }}
-              />
-            )}
-            {post.video && (
-              <CardMedia
-                component="video"
-                controls
-                src={post.video}
-                alt="Post Video"
-                sx={{ cursor: 'pointer', width: '100%', height: 250, objectFit: 'cover', margin: '10px 0' }}
-              />
-            )}
-          </Box>
+
           <CardContent>
             <Typography variant="body1" color={colors.grey?.[100]}>
               {post.content}
             </Typography>
+
+            {/* Show image if available */}
+            {post.image && (
+              <Box mt={2}>
+                <img src={post.image} alt="Post Image" style={{ width: '100%', borderRadius: '5px' }} />
+              </Box>
+            )}
+
+            {/* Show video if available */}
+            {post.video && (
+              <Box mt={2}>
+                <video controls src={post.video} style={{ width: '100%', borderRadius: '5px' }} />
+              </Box>
+            )}
           </CardContent>
+
           <CardActions disableSpacing>
             <IconButton
               aria-label="like"
@@ -228,18 +181,25 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
               <ExpandMoreIcon />
             </ExpandMore>
           </CardActions>
+
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <CardContent>
               <Typography variant="h5" sx={{ mb: 2 }}>Comments:</Typography>
 
-              {post.comments?.map((comment) => (
-                <Box key={comment.id} sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                  <Avatar src={comment.user?.avatar || "/path/to/default/avatar.png"} sx={{ width: 20, height: 20, mr: 1 }} />
-                  <Typography variant="body2" color={colors.grey?.[100]}>
-                    <strong>{comment.user?.name || "Anonymous"}</strong>: {comment.text}
-                  </Typography>
-                </Box>
-              ))}
+              {post.comments?.length > 0 ? (
+                post.comments.map((comment) => (
+                  <Box key={comment.date} sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
+                    <Avatar src={comment.user?.avatar || "/path/to/default/avatar.png"} sx={{ width: 20, height: 20, mr: 1 }} />
+                    <Typography variant="body2" color={colors.grey?.[100]}>
+                      <strong>{comment.user?.name || "Anonymous"}</strong>: {comment.content}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="body2" color={colors.grey?.[100]}>
+                  No comments yet.
+                </Typography>
+              )}
               <TextField
                 fullWidth
                 variant="outlined"
@@ -248,7 +208,8 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
                 onChange={handleCommentChange}
                 sx={{ mt: 2 }}
               />
-              <Button variant="contained"
+              <Button
+                variant="contained"
                 color="success"
                 onClick={() => handleAddComment(post.id)}
                 sx={{ mt: 1 }}
@@ -272,27 +233,6 @@ export default function RecipeReviewCard({ orderPrivateNumber }) {
         <DialogActions>
           <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
           <Button onClick={handleDeletePost} color="error">Delete</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Post Dialog */}
-      <Dialog
-        open={openEdit}
-        onClose={() => setOpenEdit(false)}
-      >
-        <DialogTitle>Edit Post</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Content"
-            fullWidth
-            variant="outlined"
-            value={postToEdit?.content || ""}
-            onChange={(e) => setPostToEdit({ ...postToEdit, content: e.target.value })}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
-          <Button onClick={handleEditPost} color="primary">Save</Button>
         </DialogActions>
       </Dialog>
     </Box>

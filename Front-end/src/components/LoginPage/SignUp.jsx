@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Typography, MenuItem, Select } from '@mui/material';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import axios from 'axios';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; // Firebase Authentication
-import './SignUp.css';
+import { useTheme } from '@mui/material';
+import { tokens } from '../../theme';  // Assuming tokens are defined in your theme
 
-const SignUp = ({ onClose }) => {
+const SignUp = ({ open, onClose }) => {
   const [name, setName] = useState('');
-  const [passportId, setPassportId] = useState(''); 
+  const [passportId, setPassportId] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,10 +16,11 @@ const SignUp = ({ onClose }) => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-
-  const auth = getAuth(); // Initialize Firebase Authentication
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);  // Get the colors based on the theme mode
+  
+  const auth = getAuth();
 
   const handleUserTypeChange = (e) => {
     setUserType(e.target.value);
@@ -42,11 +45,9 @@ const SignUp = ({ onClose }) => {
     }
 
     try {
-      // Step 1: Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // Step 2: Save the user information in Firebase Realtime Database
       const userData = {
         name,
         passportId,
@@ -56,7 +57,7 @@ const SignUp = ({ onClose }) => {
         address,
         city,
         startDate,
-        endDate
+        endDate: '' // End date not shown in the form but will be stored in the database
       };
 
       if (userType === 'customer') {
@@ -78,7 +79,6 @@ const SignUp = ({ onClose }) => {
       setAddress('');
       setCity('');
       setStartDate('');
-      setEndDate('');
       setErrorMessage('');
       onClose();
     } catch (error) {
@@ -88,121 +88,182 @@ const SignUp = ({ onClose }) => {
   };
 
   return (
-    <div className="modal active">
-      <div className="modal-content">
-        <span className="close" onClick={onClose}>&times;</span>
-        <h2>Sign Up</h2>
-        {errorMessage && <div className="error-message">{errorMessage}</div>}
+    <Dialog open={open} onClose={onClose} PaperProps={{ style: { borderRadius: 10, padding: '10px', maxWidth: '900px', backgroundColor: colors.primary[400] } }}>
+      <DialogTitle sx={{ backgroundColor: colors.greenAccent[500], textAlign: 'center', fontSize: '24px' }}>
+        Sign Up
+      </DialogTitle>
+      <DialogContent sx={{ backgroundColor: colors.primary[400], color: colors.grey[100] }} dividers>
+        {errorMessage && <Typography color="error" align="center">{errorMessage}</Typography>}
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Name:</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Passport ID:</label>
-            <input
-              type="text"
-              value={passportId}
-              onChange={(e) => setPassportId(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Phone Number:</label>
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Password:</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Confirm Password:</label>
-            <input
-              type="password"
-              value={confirmationPassword}
-              onChange={(e) => setConfirmationPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>User Type:</label>
-            <select value={userType} onChange={handleUserTypeChange} required>
-              <option value="">Select User Type</option>
-              <option value="customer">Customer</option>
-              <option value="manager">Manager</option>
-              <option value="employee_office">Employee Office</option>
-              <option value="field_worker">Field Worker</option>
-            </select>
-          </div>
-          {(userType === 'manager' || userType === 'employee_office' || userType === 'field_worker') && (
+          <TextField
+            label="Name"
+            variant="outlined"
+            fullWidth
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+            InputLabelProps={{
+              style: { color: colors.grey[100] },
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] },
+            }}
+          />
+          <TextField
+            label="Passport ID"
+            variant="outlined"
+            fullWidth
+            value={passportId}
+            onChange={(e) => setPassportId(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+            InputLabelProps={{
+              style: { color: colors.grey[100] },
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] },
+            }}
+          />
+          <TextField
+            label="Phone Number"
+            variant="outlined"
+            fullWidth
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+            InputLabelProps={{
+              style: { color: colors.grey[100] },
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] },
+            }}
+          />
+          <TextField
+            label="Email"
+            variant="outlined"
+            fullWidth
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+            InputLabelProps={{
+              style: { color: colors.grey[100] },
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] },
+            }}
+          />
+          <TextField
+            label="Password"
+            variant="outlined"
+            type="password"
+            fullWidth
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+            InputLabelProps={{
+              style: { color: colors.grey[100] },
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] },
+            }}
+          />
+          <TextField
+            label="Confirm Password"
+            variant="outlined"
+            type="password"
+            fullWidth
+            value={confirmationPassword}
+            onChange={(e) => setConfirmationPassword(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+            InputLabelProps={{
+              style: { color: colors.grey[100] },
+            }}
+            InputProps={{
+              style: { color: colors.grey[100] },
+            }}
+          />
+          <Select
+            label="User Type"
+            value={userType}
+            onChange={handleUserTypeChange}
+            fullWidth
+            required
+            sx={{ mb: 2, color: colors.grey[100] }}
+          >
+            <MenuItem value="" disabled>Select User Type</MenuItem>
+            <MenuItem value="customer">Customer</MenuItem>
+            <MenuItem value="employee_office">Employee Office</MenuItem>
+            <MenuItem value="field_worker">Field Worker</MenuItem>
+          </Select>
+          {userType !== 'customer' && (
             <>
-              <div className="form-group">
-                <label>Address:</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>City:</label>
-                <input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Start Date:</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>End Date:</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                />
-              </div>
+              <TextField
+                label="Address"
+                variant="outlined"
+                fullWidth
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                sx={{ mb: 2 }}
+                required
+                InputLabelProps={{
+                  style: { color: colors.grey[100] },
+                }}
+                InputProps={{
+                  style: { color: colors.grey[100] },
+                }}
+              />
+              <TextField
+                label="City"
+                variant="outlined"
+                fullWidth
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                sx={{ mb: 2 }}
+                required
+                InputLabelProps={{
+                  style: { color: colors.grey[100] },
+                }}
+                InputProps={{
+                  style: { color: colors.grey[100] },
+                }}
+              />
+              <TextField
+                label="Start Date"
+                variant="outlined"
+                type="date"
+                fullWidth
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                sx={{ mb: 2 }}
+                InputLabelProps={{
+                  shrink: true,
+                  style: { color: colors.grey[100] },
+                }}
+                InputProps={{
+                  style: { color: colors.grey[100] },
+                }}
+                required
+              />
             </>
           )}
-          <button type="submit">OK</button>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+      <DialogActions sx={{ backgroundColor: colors.primary[400] }}>
+        <Button onClick={onClose} sx={{ backgroundColor: colors.redAccent[500], color: colors.grey[100] }}>
+          Close
+        </Button>
+        <Button onClick={handleSubmit} sx={{ backgroundColor: colors.greenAccent[500], color: colors.grey[100] }}>
+          Sign Up
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
 export default SignUp;
+

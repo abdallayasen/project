@@ -1,136 +1,152 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Box, Button, Typography, TextField, Card, IconButton } from '@mui/material';
-import { ref, onValue, set, remove } from 'firebase/database';  // Import Firebase functions
-import { db } from '../../firebase';  // Import Firebase instance
-import DeleteIcon from '@mui/icons-material/Delete';
+import React, { useState, useEffect } from 'react';
+import { ref, onValue, update } from 'firebase/database'; // Import 'update' to handle Firebase updates
+import { db } from '../../firebase';
+import { Box } from '@mui/material';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { tokens } from '../../theme';
 import Header from '../../components/Header';
-import { UserContext } from '../../context/UserContext';  // Assuming you have a UserContext to get current user
+import { useTheme } from '@mui/material';
 
-// Colors for sticky notes
-const colors = ['#FFEB3B', '#FF5722', '#4CAF50', '#00BCD4', '#FFC107', '#9C27B0'];
+const Employee = () => {
+  const [employees, setEmployees] = useState([]);
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
 
-const Dashboard = () => {
-  const [notes, setNotes] = useState([]);
-  const { user } = useContext(UserContext);  // Get the current user context
-
-  // Load notes for the current user from Firebase
+  // Load employee data from Firebase
   useEffect(() => {
-    if (user && user.passportId) {
-      const notesRef = ref(db, `notes/${user.passportId}`);
-      onValue(notesRef, (snapshot) => {
-        const data = snapshot.val();
-        const loadedNotes = data ? Object.keys(data).map((key) => ({ id: key, ...data[key] })) : [];
-        setNotes(loadedNotes);
-      });
+    const usersRef = ref(db, 'users/');
+    onValue(usersRef, (snapshot) => {
+      const data = snapshot.val();
+      const employeeList = data
+        ? Object.keys(data).map((key, index) => ({
+            id: key, // Use Firebase key as id to ensure unique identification
+            serialNumber: index + 1,
+            ...data[key],
+          }))
+        : [];
+      setEmployees(employeeList.filter((employee) => employee.userType !== 'customer'));
+    });
+  }, []);
+
+  // Handle updating the end date in Firebase
+  const handleCellEditCommit = async (params) => {
+    const { id, field, value } = params;
+
+    if (field === 'endDate') {
+      try {
+        const employeeRef = ref(db, `users/${id}`);
+        await update(employeeRef, { endDate: value }); // Update the 'endDate' in Firebase
+        console.log(`Updated endDate for employee with ID: ${id}`);
+      } catch (error) {
+        console.error('Error updating endDate:', error);
+      }
     }
-  }, [user]);
-
-  // Save notes to Firebase under the current user's passportId
-  const saveNoteToFirebase = (newNotes) => {
-    if (user && user.passportId) {
-      const notesRef = ref(db, `notes/${user.passportId}`);
-      set(notesRef, newNotes.reduce((acc, note) => {
-        acc[note.id] = note;
-        return acc;
-      }, {}));
-    }
   };
 
-  // Function to add a new sticky note
-  const addNote = () => {
-    const newNote = {
-      id: Date.now().toString(),  // Use string for Firebase key compatibility
-      title: '',
-      text: '',
-      color: colors[Math.floor(Math.random() * colors.length)], // Assign a random color
-    };
-    const updatedNotes = [...notes, newNote];
-    setNotes(updatedNotes);
-    saveNoteToFirebase(updatedNotes);
-  };
-
-  // Function to update a note's content
-  const updateNote = (id, field, value) => {
-    const updatedNotes = notes.map((note) => (note.id === id ? { ...note, [field]: value } : note));
-    setNotes(updatedNotes);
-    saveNoteToFirebase(updatedNotes);
-  };
-
-  // Function to delete a sticky note
-  const deleteNote = (id) => {
-    const updatedNotes = notes.filter((note) => note.id !== id);
-    setNotes(updatedNotes);
-    saveNoteToFirebase(updatedNotes);
-  };
+  const columns = [
+    { field: 'serialNumber', headerName: 'Serial Number', flex: 0.5 },
+    {
+      field: 'name',
+      headerName: 'Name',
+      flex: 1,
+      cellClassName: 'name-column--cell',
+    },
+    {
+      field: 'passportId',
+      headerName: 'Passport ID',
+      flex: 1,
+    },
+    {
+      field: 'phone',
+      headerName: 'Phone Number',
+      flex: 1,
+    },
+    {
+      field: 'email',
+      headerName: 'Email',
+      flex: 1,
+    },
+    {
+      field: 'address',
+      headerName: 'Address',
+      flex: 1,
+    },
+    {
+      field: 'city',
+      headerName: 'City',
+      flex: 1,
+    },
+    {
+      field: 'startDate',
+      headerName: 'Start Date',
+      flex: 1,
+    },
+    {
+      field: 'endDate',
+      headerName: 'End Date',
+      flex: 1,
+      editable: true, // Make 'endDate' editable
+      type: 'date', // Set column type to 'date'
+      valueGetter: (params) => (params.value ? new Date(params.value) : null), // Convert string to Date object
+      valueSetter: (params) => {
+        const newValue = params.value ? new Date(params.value).toISOString().split('T')[0] : null; // Handle null or empty values
+        return { ...params.row, endDate: newValue };
+      },
+    },
+    {
+      field: 'userType',
+      headerName: 'Role',
+      flex: 1,
+    },
+  ];
 
   return (
-    <Box m="20px">
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Header title="Home" subtitle="Welcome to your dashboard" />
-        <Button variant="contained" color="primary" onClick={addNote}>
-          Add Sticky Note
-        </Button>
-      </Box>
-
-      {/* Sticky Notes Section */}
-      <Box mt={4} display="flex" flexWrap="wrap" gap={2}>
-        {notes.map((note) => (
-          <Card
-            key={note.id}
-            sx={{
-              width: '250px',
-              backgroundColor: note.color,
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-            }}
-          >
-            <Box mb={2}>
-              <TextField
-                label="Title"
-                variant="outlined"
-                fullWidth
-                value={note.title}
-                onChange={(e) => updateNote(note.id, 'title', e.target.value)}
-                InputProps={{
-                  sx: { color: 'black' }, // Ensure the text is readable
-                }}
-                InputLabelProps={{
-                  sx: { color: 'black' },
-                }}
-              />
-            </Box>
-            <Box flexGrow={1} mb={2}>
-              <TextField
-                label="Write your note here..."
-                variant="outlined"
-                multiline
-                fullWidth
-                rows={6}
-                value={note.text}
-                onChange={(e) => updateNote(note.id, 'text', e.target.value)}
-                InputProps={{
-                  sx: { color: 'black' },
-                }}
-                InputLabelProps={{
-                  sx: { color: 'black' },
-                }}
-              />
-            </Box>
-            <IconButton
-              onClick={() => deleteNote(note.id)}
-              color="error"
-              sx={{ alignSelf: 'flex-end' }}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </Card>
-        ))}
+<Box 
+    m="20px" 
+   
+  >      <Header title="Employee Information" subtitle="Employee information details" />
+      <Box
+        m="40px 0 0 0"
+        height="75vh"
+        sx={{
+          '& .MuiDataGrid-root': {
+            border: 'none',
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: 'none',
+          },
+          '& .name-column--cell': {
+            color: colors.greenAccent[300],
+          },
+          '& .MuiDataGrid-columnHeader': {
+            backgroundColor: colors.blueAccent[700],
+            borderBottom: 'none',
+          },
+          '& .MuiDataGrid-virtualScroller': {
+            backgroundColor: colors.primary[400],
+          },
+          '& .MuiDataGrid-footerContainer': {
+            borderTop: 'none',
+            backgroundColor: colors.blueAccent[700],
+          },
+          '& .MuiCheckbox-root': {
+            color: `${colors.greenAccent[200]} !important`,
+          },
+          '& .MuiDataGrid-toolbarContainer .MuiButton-text': {
+            color: `${colors.grey[100]} !important`,
+          },
+        }}
+      >
+        <DataGrid
+          rows={employees}
+          columns={columns}
+          processRowUpdate={handleCellEditCommit} // Handle the editing of rows
+          slots={{ toolbar: GridToolbar }}
+          experimentalFeatures={{ newEditingApi: true }} // Enable new editing API
+        />
       </Box>
     </Box>
   );
 };
 
-export default Dashboard;
+export default Employee;

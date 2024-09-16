@@ -52,8 +52,10 @@ const Customer = () => {
   ];
 
   return (
-    <Box m="20px">
-      <Header
+<Box 
+    m="20px" 
+   
+  >      <Header
         title="Client Information"
         subtitle="Current Clients"
       />

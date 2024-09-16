@@ -4,8 +4,7 @@ import {
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { ref as dbRef, onValue } from 'firebase/database';
-import { ref as storageRef, getDownloadURL, listAll } from 'firebase/storage';
-import { db, storage } from '../../firebase';
+import { db } from '../../firebase';
 import { Typography, useTheme } from '@mui/material';
 import { tokens } from '../../theme';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -16,6 +15,8 @@ import CommentIcon from '@mui/icons-material/Comment';
 import Header from "../../components/Header";
 import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
+import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../firebase';  // Make sure you have storage configured in your firebase.js
 
 const AllWork = () => {
   const theme = useTheme();
@@ -31,31 +32,51 @@ const AllWork = () => {
 
   useEffect(() => {
     // Fetch orders from OrdersInfo (which contains order details)
-    const fetchOrdersInfo = () => {
-      const ordersRef = dbRef(db, 'orders/');
-      onValue(ordersRef, (snapshot) => {
-        const data = snapshot.val();
-        const orderList = data
-          ? Object.keys(data).map((key) => ({
-              id: key,
-              serialNumber: index + 1, // Assign a serial number based on the index
-              orderPrivateNumber: data[key].orderPrivateNumber,
-              client_mail: data[key].customerEmail,
-              officeStatus: data[key].officeStatus,
-              fieldStatus: data[key].fieldStatus,
-              ...data[key],
-            }))
-          : [];
+  const fetchOrdersInfo = async () => {
+    const ordersRef = dbRef(db, 'orders/');
+    onValue(ordersRef, async (snapshot) => {
+      const data = snapshot.val();
+      const orderList = data
+        ? await Promise.all(
+            Object.keys(data).map(async (key) => {
+              const files = await fetchFilesFromStorage(key);  // Fetch files for each order
+              return {
+                id: key,
+                serialNumber: index + 1, // Assign a serial number based on the index
+                orderPrivateNumber: data[key].orderPrivateNumber,
+                client_mail: data[key].customerEmail,
+                officeStatus: data[key].officeStatus,
+                fieldStatus: data[key].fieldStatus,
+                files, // Include the files in the order data
+                ...data[key],
+              };
+            })
+          )
+        : [];
 
-        // Filter orders: only show orders with both officeStatus and fieldStatus as 'Success'
-        const filteredOrders = orderList.filter(
-          (order) => order.officeStatus === 'Success' && order.fieldStatus === 'Success'
-        );
+      // Filter orders: only show orders with both officeStatus and fieldStatus as 'Success'
+      const filteredOrders = orderList.filter(
+        (order) => order.officeStatus === 'Success' && order.fieldStatus === 'Success'
+      );
 
-        setOrdersInfo(filteredOrders); // Save filtered orders
-      });
-    };
-
+      setOrdersInfo(filteredOrders); // Save filtered orders
+    });
+  };
+// Add the fetchFilesFromStorage function to fetch files for each order
+const fetchFilesFromStorage = async (orderId) => {
+  const filesRef = storageRef(storage, `orders/${orderId}`);
+  const fileList = [];
+  try {
+    const result = await listAll(filesRef);
+    for (const itemRef of result.items) {
+      const url = await getDownloadURL(itemRef);
+      fileList.push({ name: itemRef.name, url });
+    }
+  } catch (error) {
+    console.error("Error fetching files from storage:", error);
+  }
+  return fileList;
+};
     // Fetch customers
     const fetchCustomers = () => {
       const customersRef = dbRef(db, 'customers/');
@@ -124,13 +145,13 @@ const AllWork = () => {
           let icon;
           const lowerCaseFile = file.name.toLowerCase();
           if (lowerCaseFile.endsWith('.pdf')) {
-            icon = <PictureAsPdfIcon />;
+            icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }}/>;
           } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg')) {
-            icon = <ImageIcon sx={{ color: 'white', fontSize: 20 }} />;
+            icon = <ImageIcon sx={{ color: "Red" , fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
-            icon = <VideoLibraryIcon />;
+            icon = <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />;
           } else {
-            icon = <CloudDownloadIcon sx={{ color: 'white' }} />;
+            icon = <CloudDownloadIcon sx={{ color: colors.greenAccent[500]  }} />;
           }
 
           return (
@@ -205,36 +226,15 @@ const AllWork = () => {
       editable: false,
     },
     {
-      field: "fieldStatus",
-      headerName: "Field Status",
-      flex: 1,
-      renderCell: (params) => (
-        <Box sx={statusStyle(params.value)}>
-          <StatusButton initialStatus={params.value} type="fieldStatus" orderId={params.row.id} />
-        </Box>
-      ),
-      editable: false,
-    },
-    {
-      field: "officeStatus",
-      headerName: "Office Status",
-      flex: 1,
-      renderCell: (params) => (
-        <Box sx={statusStyle(params.value)}>
-          <StatusButton initialStatus={params.value} type="officeStatus" orderId={params.row.id} />
-        </Box>
-      ),
-      editable: false,
-    },
-    {
       field: "files",
       headerName: "Files",
       flex: 1,
       renderCell: renderFileIcons,
     },
+    
     {
       field: "comments",
-      headerName: "Comments",
+      headerName: "Posts",
       flex: 1,
       renderCell: (params) => (
         <Box 
@@ -246,7 +246,7 @@ const AllWork = () => {
           }}
         >
           <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
-            <CommentIcon />
+            <CommentIcon sx={{ color: colors.greenAccent[500] }} />
           </IconButton>
         </Box>
       ),
@@ -260,7 +260,7 @@ const AllWork = () => {
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
           <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
-            <CloudDownloadIcon sx={{ color: 'white' }} />
+            <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />
           </IconButton>
         </Box>
       ),
@@ -270,8 +270,10 @@ const AllWork = () => {
   ];
 
   return (
-    <Box m="20px">
-      <Header title="Completed Orders" subtitle="List of successfully completed orders" />
+<Box 
+    m="20px" 
+
+  >      <Header title="Completed Orders" subtitle="List of successfully completed orders" />
       <Box mt="20px" height="75vh">
         <DataGrid
           rows={rowsWithCustomerInfo}

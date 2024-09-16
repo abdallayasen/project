@@ -18,10 +18,12 @@ const OrdersInfo = () => {
     const ordersRef = ref(db, 'orders/');
     onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
-      const ordersList = data ? Object.keys(data).map((key) => ({
+      const ordersList = data ? Object.keys(data).map((key,index) => ({
         id: key,
         ...data[key],
+        
         client_mail: data[key].customerEmail, // Add client_mail field
+        serialNumber: index + 1,
       })) : [];
       setOrders(ordersList);
     });
@@ -46,7 +48,7 @@ const OrdersInfo = () => {
   });
 
   const columns = [
-    { field: 'id', headerName: 'Order Number', flex: 0.5 },
+    { field: 'serialNumber', headerName: 'Order Number', flex: 0.5 },
     {
       field: 'orderPrivateNumber',
       headerName: 'Order Private Number',
@@ -101,8 +103,10 @@ const OrdersInfo = () => {
   ];
 
   return (
-    <Box m="20px">
-      <Header title="Orders Information" subtitle="Details of all orders" />
+<Box 
+    m="20px" 
+  
+  >      <Header title="Orders Information" subtitle="Details of all orders" />
       <Box
         m="40px 0 0 0"
         height="75vh"
