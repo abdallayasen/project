@@ -32,36 +32,38 @@ const AllWork = () => {
 
   useEffect(() => {
     // Fetch orders from OrdersInfo (which contains order details)
-  const fetchOrdersInfo = async () => {
-    const ordersRef = dbRef(db, 'orders/');
-    onValue(ordersRef, async (snapshot) => {
-      const data = snapshot.val();
-      const orderList = data
-        ? await Promise.all(
-            Object.keys(data).map(async (key) => {
-              const files = await fetchFilesFromStorage(key);  // Fetch files for each order
-              return {
-                id: key,
-                serialNumber: index + 1, // Assign a serial number based on the index
-                orderPrivateNumber: data[key].orderPrivateNumber,
-                client_mail: data[key].customerEmail,
-                officeStatus: data[key].officeStatus,
-                fieldStatus: data[key].fieldStatus,
-                files, // Include the files in the order data
-                ...data[key],
-              };
-            })
-          )
-        : [];
-
-      // Filter orders: only show orders with both officeStatus and fieldStatus as 'Success'
-      const filteredOrders = orderList.filter(
-        (order) => order.officeStatus === 'Success' && order.fieldStatus === 'Success'
-      );
-
-      setOrdersInfo(filteredOrders); // Save filtered orders
-    });
-  };
+    const fetchOrdersInfo = async () => {
+      const ordersRef = dbRef(db, 'orders/');
+      onValue(ordersRef, async (snapshot) => {
+        const data = snapshot.val();
+        const orderList = data
+          ? await Promise.all(
+              Object.keys(data).map(async (key) => {
+                const files = await fetchFilesFromStorage(key);  // Fetch files for each order
+                return {
+                  id: key,
+                  serialNumber: index + 1, // Assign a serial number based on the index
+                  orderPrivateNumber: data[key].orderPrivateNumber,
+                  client_mail: data[key].customerEmail,
+                  officeStatus: data[key].officeStatus,
+                  fieldStatus: data[key].fieldStatus,
+                  isCompleted: data[key].isCompleted,  // Ensure this flag is part of the data
+                  files, // Include the files in the order data
+                  ...data[key],
+                };
+              })
+            )
+          : [];
+    
+        // Filter orders: only show orders with both officeStatus and fieldStatus as 'Success' and isCompleted is true
+        const filteredOrders = orderList.filter(
+          (order) => order.officeStatus === 'Success' && order.fieldStatus === 'Success' && order.isCompleted
+        );
+    
+        setOrdersInfo(filteredOrders); // Save filtered orders
+      });
+    };
+    
 // Add the fetchFilesFromStorage function to fetch files for each order
 const fetchFilesFromStorage = async (orderId) => {
   const filesRef = storageRef(storage, `orders/${orderId}`);

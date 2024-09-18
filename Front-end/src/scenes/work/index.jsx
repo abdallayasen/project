@@ -521,30 +521,33 @@ const Work = () => {
       headerName: "Field Employee",
       flex: 1,
       renderCell: (params) => {
-        if (params.value) {
+        // Only allow manager to edit this field
+        if (user.userType === 'manager') {
           return (
-            <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              {params.value}
-            </Typography>
+            <Select
+              value={params.value || ''}
+              onChange={(e) => handleFieldWorkerChange(params.row.id, e.target.value)}
+              displayEmpty
+              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+            >
+              <MenuItem value="" disabled>Select Field Worker</MenuItem>
+              {fieldWorkers.map((worker) => (
+                <MenuItem key={worker.name} value={worker.name}>
+                  {worker.name}
+                </MenuItem>
+              ))}
+            </Select>
           );
         }
+        // For other user types, just display the value
         return (
-          <Select
-            value={params.value || ''}
-            onChange={(e) => handleFieldWorkerChange(params.row.id, e.target.value)}
-            displayEmpty
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-          >
-            <MenuItem value="" disabled>Select Field Worker</MenuItem>
-            {fieldWorkers.map((worker) => (
-              <MenuItem key={worker.name} value={worker.name}>
-                {worker.name}
-              </MenuItem>
-            ))}
-          </Select>
+          <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            {params.value || 'Not Assigned'}
+          </Typography>
         );
       },
     },
+    
     {
       field: "fieldStatus",
       headerName: "Field Status",

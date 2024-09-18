@@ -52,7 +52,7 @@ const Sidebar = () => {
   const [isAddOrderOpen, setAddOrderOpen] = useState(false);  // State for Add Order pop-up
   const { user } = useContext(UserContext); 
   const sidebarImage = theme.palette.mode === 'dark' ? sidebarImageDark : sidebarImageLight;
-  const iconColor = theme.palette.mode === 'light' ? '#030132' : '#ffffff';
+  const iconColor = theme.palette.mode === 'light' ? '#030132' : '#00ffec';
 
   const openSignUp = () => {
     setSignUpOpen(true);
@@ -162,7 +162,7 @@ const Sidebar = () => {
 
             <Typography
               variant="h6"
-              color="#a5062f"
+              color="#451d1d"
               sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
               Manage
@@ -189,15 +189,17 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
-            <Typography
+           
+            {user?.userType === 'manager' && (
+              
+              <>
+               <Typography
               variant="h6"
-              color="#a5062f"
+              color="#451d1d"
               sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
               Information
             </Typography>
-            {user?.userType === 'manager' && (
-              <>
                 <Item
                   title="Orders Info"
                   to="/manager/orders"
@@ -224,7 +226,7 @@ const Sidebar = () => {
 
             <Typography
               variant="h6"
-              color="#a5062f"
+              color="#451d1d"
               sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
               Charts
@@ -239,7 +241,7 @@ const Sidebar = () => {
 
             <Typography
               variant="h6"
-              color="#a5062f"
+              color="#451d1d"
               sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
                 Tools
@@ -253,15 +255,16 @@ const Sidebar = () => {
 />
 
 
-            <Typography
+           
+            {user?.userType === 'manager' && (
+              <>
+               <Typography
               variant="h6"
-              color="#a5062f"
+              color="#451d1d"
               sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
             >
               Add
             </Typography>
-            {user?.userType === 'manager' && (
-              <>
                 <MenuItem
                   icon={<AddIcon sx={{ color: iconColor }}/>}
                   onClick={openAddOrder}  // Open Add Order pop-up
