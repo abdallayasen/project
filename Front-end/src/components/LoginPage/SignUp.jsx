@@ -5,6 +5,9 @@ import axios from 'axios';
 import { useTheme } from '@mui/material';
 import { tokens } from '../../theme';  // Assuming tokens are defined in your theme
 
+// Import Firebase Database Functions
+import { getDatabase, ref, get, query, orderByChild, equalTo } from 'firebase/database';
+
 const SignUp = ({ open, onClose }) => {
   const [name, setName] = useState('');
   const [passportId, setPassportId] = useState('');
@@ -19,7 +22,7 @@ const SignUp = ({ open, onClose }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);  // Get the colors based on the theme mode
-  
+
   const auth = getAuth();
 
   const handleUserTypeChange = (e) => {
@@ -45,6 +48,18 @@ const SignUp = ({ open, onClose }) => {
     }
 
     try {
+      // Check if the name already exists
+      const db = getDatabase();
+      const usersRef = ref(db, userType === 'customer' ? 'customers' : 'users');
+      const nameQuery = query(usersRef, orderByChild('name'), equalTo(name));
+      const nameSnapshot = await get(nameQuery);
+
+      if (nameSnapshot.exists()) {
+        setErrorMessage('This name is already in use. Please choose a different name.');
+        return;
+      }
+
+      // Proceed with creating the user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
@@ -57,7 +72,7 @@ const SignUp = ({ open, onClose }) => {
         address,
         city,
         startDate,
-        endDate: '' // End date not shown in the form but will be stored in the database
+        endDate: '', // End date not shown in the form but will be stored in the database
       };
 
       if (userType === 'customer') {
@@ -83,7 +98,12 @@ const SignUp = ({ open, onClose }) => {
       onClose();
     } catch (error) {
       console.error('Error adding user:', error);
-      setErrorMessage('Error adding user. Please try again.');
+
+      if (error.code === 'auth/email-already-in-use') {
+        setErrorMessage('This email is already in use. Please use a different email address.');
+      } else {
+        setErrorMessage('Error adding user. Please try again.');
+      }
     }
   };
 
@@ -194,13 +214,14 @@ const SignUp = ({ open, onClose }) => {
             fullWidth
             required
             sx={{ mb: 2, color: colors.grey[100] }}
+            displayEmpty
           >
             <MenuItem value="" disabled>Select User Type</MenuItem>
             {/* <MenuItem value="customer">Customer</MenuItem> */}
             <MenuItem value="employee_office">Employee Office</MenuItem>
             <MenuItem value="field_worker">Field Worker</MenuItem>
           </Select>
-          {userType !== 'customer' && (
+          {(userType === 'employee_office' || userType === 'field_worker') && (
             <>
               <TextField
                 label="Address"
@@ -266,4 +287,3 @@ const SignUp = ({ open, onClose }) => {
 };
 
 export default SignUp;
-

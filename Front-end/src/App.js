@@ -13,7 +13,7 @@ import AddOrder from './scenes/orders/AddOrder';
 import Work from './scenes/work';
 import MyWork from './scenes/mywork';
 import { UserProvider } from './context/UserContext';
-import MyCalendar  from './scenes/Calendar_page/Calendar';
+import MyCalendar from './scenes/Calendar_page/Calendar';
 
 function App() {
   const [theme, colorMode] = useMode();

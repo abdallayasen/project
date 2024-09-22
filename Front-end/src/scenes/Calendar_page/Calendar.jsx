@@ -5,18 +5,20 @@ import { format, parse, startOfWeek, getDay } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Box } from '@mui/material';
 import enUS from 'date-fns/locale/en-US';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = {
   'en-US': enUS,
 };
 
 const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-  getDay,
+  format: (date, formatStr) => format(date, formatStr, { locale: enUS }),
+  parse: (dateStr, formatStr) => parse(dateStr, formatStr, new Date(), { locale: enUS }),
+  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
+  getDay: (date) => getDay(date),
   locales,
 });
+
 
 const MyCalendar = () => {
   const [events] = useState([
@@ -48,10 +50,11 @@ const MyCalendar = () => {
         startAccessor="start"
         endAccessor="end"
         style={{
-          width: '20%',
-          height: '75vh', // Make the calendar smaller
+          width: '80%', // Increase width to 80%
+          height: '75vh',
           color: '#333',
         }}
+        
         views={['month', 'week', 'day']}
         defaultView="month"
       />

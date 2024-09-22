@@ -23,10 +23,11 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import DownloadIcon from '@mui/icons-material/Download';
 import { UserContext } from "../../context/UserContext";
-import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
 import Badge from '@mui/material/Badge';
+import Tooltip from '@mui/material/Tooltip';
 
+import DescriptionIcon from '@mui/icons-material/Description';
 const Work = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -49,6 +50,22 @@ const Work = () => {
   const [refundedStatus, setRefundedStatus] = useState(null);  // Holds the refunded status of the row
   const [selectedOrder, setSelectedOrder] = useState(null);  // The selected order for comments
   const [postCounts, setPostCounts] = useState({}); // Holds the post counts for each order
+  const [officeEmployees, setOfficeEmployees] = useState([]); // List of office employees
+  const [alertOpen, setAlertOpen] = useState(false);
+// Add this at the top of your component
+const statusOptions = ["Assigned", "Processing", "Revision", "Success"];
+const newOrder = {
+  // ... other properties
+  fieldStatus: 'Not Assigned',
+  officeStatus: 'Not Assigned',
+};
+const statusColors = {
+  "Not Assigned": "#ff0000",
+  "Assigned": "grey",
+  "Processing": "#19b8ba", // Updated color
+  "Revision": "#f58c0e",
+  "Success": "#2c8826",    // Updated color
+};
 
   useEffect(() => {
     // Function to fetch orders and their associated files
@@ -72,6 +89,26 @@ const Work = () => {
   
         // Filter out completed orders before setting rows
         const activeOrders = orderList.filter((order) => !order.isCompleted);
+        const updatedOrders = activeOrders.map((order) => {
+          let updatedOrder = { ...order };
+        
+          if (!order.employeeFieldName) {
+            updatedOrder.fieldStatus = "Not Assigned";
+          } else if (order.fieldStatus === "Not Assigned") {
+            updatedOrder.fieldStatus = "Assigned";
+          }
+        
+          if (!order.employeeOfficeName) {
+            updatedOrder.officeStatus = "Not Assigned";
+          } else if (order.officeStatus === "Not Assigned") {
+            updatedOrder.officeStatus = "Assigned";
+          }
+        
+          return updatedOrder;
+        });
+        
+        setRows(updatedOrders);
+        
         setRows(activeOrders); // Only show active orders (not completed)
       });
     };
@@ -85,7 +122,8 @@ const Work = () => {
         setCustomers(customerList);
       });
     };
-  
+   
+    
     // Function to fetch field worker data
     const fetchFieldWorkers = () => {
       const usersRef = dbRef(db, 'users/');
@@ -123,7 +161,59 @@ const Work = () => {
   }, []);
 
   
-
+  const handleOfficeChange = async (orderId, selectedOfficeName) => {
+    const orderRef = dbRef(db, `orders/${orderId}`);
+  
+    const currentRow = rows.find((row) => row.id === orderId);
+  
+    if (!currentRow) {
+      console.error(`Order with ID ${orderId} not found in rows`);
+      return;
+    }
+  
+    let currentStatus = currentRow.officeStatus || "Not Assigned";
+    let newStatus = currentStatus;
+  
+    if (selectedOfficeName) {
+      if (currentStatus === "Not Assigned") {
+        newStatus = "Assigned";
+      } else {
+        // Keep the current status if it's beyond "Assigned"
+        newStatus = currentStatus;
+      }
+    } else {
+      newStatus = "Not Assigned";
+    }
+  
+    // Ensure newStatus is defined
+    if (typeof newStatus === 'undefined') {
+      console.error('newStatus is undefined');
+      newStatus = "Not Assigned";
+    }
+  
+    await update(orderRef, {
+      employeeOfficeName: selectedOfficeName || null,
+      officeStatus: newStatus,
+    });
+  
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === orderId
+          ? {
+              ...row,
+              employeeOfficeName: selectedOfficeName || null,
+              officeStatus: newStatus,
+            }
+          : row
+      )
+    );
+  };
+  
+  
+  
+  
+  
+  
   // Function to fetch files from Firebase Storage based on order ID
   const fetchFilesFromStorage = async (orderId) => {
     const filesRef = storageRef(storage, `orders/${orderId}`);
@@ -167,29 +257,28 @@ const Work = () => {
     return ''; // No additional class is needed, so return an empty string
   };
 
-  // Function to update order status
   const updateOrderStatus = (orderId, type, newStatus) => {
-    if (newStatus === "Success") {
-      const currentRow = rows.find((row) => row.id === orderId);
-      const previousStatus = currentRow ? currentRow[type] : "Refunded";
-
-      setRefundedStatus(previousStatus);
-      setPendingStatusUpdate({ orderId, type, newStatus });
-      setConfirmationDialogOpen(true);
-    } else {
-      const orderRef = dbRef(db, `orders/${orderId}`);
-      update(orderRef, { [type]: newStatus }).then(() => {
+    const orderRef = dbRef(db, `orders/${orderId}`);
+    if (newStatus === "Revision" && user.userType !== "manager") {
+      setSnackbarMessage(`Only managers can set the status to "Revision".`);
+      setSnackbarOpen(true);
+      return;
+    }
+    update(orderRef, { [type]: newStatus })
+      .then(() => {
         setRows((prevRows) =>
           prevRows.map((row) => (row.id === orderId ? { ...row, [type]: newStatus } : row))
         );
         setSnackbarMessage(`Order ${orderId} ${type} updated to ${newStatus}`);
         setSnackbarOpen(true);
-      }).catch((error) => {
+      })
+      .catch((error) => {
         setSnackbarMessage(`Failed to update order ${orderId}: ${error.message}`);
         setSnackbarOpen(true);
       });
-    }
   };
+  
+  
 
   // Confirm the status update for an order
   const handleConfirmStatusUpdate = () => {
@@ -292,23 +381,111 @@ const Work = () => {
     handleEditDialogClose();
   };
 
+  const StatusButton = ({
+    initialStatus,
+    type,
+    orderId,
+    updateOrderStatus,
+    disabled,
+    userType,
+  }) => {
+    const [status, setStatus] = useState(initialStatus || "Not Assigned");
+  
+    // Define status options based on userType
+    const statusOptions = userType === "manager"
+      ? ["Assigned", "Processing", "Revision", "Success"]
+      : ["Assigned", "Processing", "Success"]; // Exclude "Revision" for non-managers
+  
+    const isDisabled = disabled || status === "Not Assigned";
+  
+    const handleClick = () => {
+      if (isDisabled) return;
+  
+      const currentIndex = statusOptions.indexOf(status);
+  
+      // If the current status is "Revision" and the user is not a manager, disable the button
+      if (status === "Revision" && userType !== "manager") {
+        return;
+      }
+  
+      const nextIndex = (currentIndex + 1) % statusOptions.length;
+      const newStatus = statusOptions[nextIndex];
+  
+      setStatus(newStatus);
+      updateOrderStatus(orderId, type, newStatus);
+    };
+  
+    // Disable the button if the status is "Revision" and the user is not a manager
+    const buttonDisabled = isDisabled || (status === "Revision" && userType !== "manager");
+  
+    return (
+      <Button
+        variant="contained"
+        sx={{
+          backgroundColor: statusColors[status],
+          color: 'white',
+          textTransform: 'none',
+          fontSize: '12px',
+          padding: '6px 12px',
+          minWidth: '100px',
+          borderRadius: '9999px',
+        }}
+        onClick={handleClick}
+        disabled={buttonDisabled}
+      >
+        {status}
+      </Button>
+    );
+  };
+  
+  
+  
+  
+  
+
   const fetchOrders = async () => {
     const ordersRef = dbRef(db, 'orders/');
     onValue(ordersRef, async (snapshot) => {
       const data = snapshot.val();
       const orderList = data
-        ? await Promise.all(Object.keys(data).map(async (key, index) => {
-            const fileList = await fetchFilesFromStorage(key);
-            return {
-              id: key,
-              serialNumber: index + 1,
-              files: fileList,
-              ...data[key],
-            };
-          }))
+        ? await Promise.all(
+            Object.keys(data).map(async (key, index) => {
+              const fileList = await fetchFilesFromStorage(key);
+              const orderData = data[key];
+              return {
+                id: key,
+                serialNumber: index + 1,
+                files: fileList,
+                fieldStatus: orderData.fieldStatus || "Not Assigned",
+                officeStatus: orderData.officeStatus || "Not Assigned",
+                ...orderData,
+              };
+            })
+          )
         : [];
-      const activeOrders = orderList.filter((order) => !order.isCompleted); // Filter out completed orders
-      setRows(activeOrders);
+        const activeOrders = orderList.filter((order) => !order.isCompleted);
+
+        // Update statuses based on employee assignments
+        const updatedOrders = activeOrders.map(order => {
+          let updatedOrder = { ...order };
+        
+          if (!order.employeeFieldName) {
+            updatedOrder.fieldStatus = "Not Assigned";
+          } else if (order.fieldStatus === "Not Assigned") {
+            updatedOrder.fieldStatus = "Assigned";
+          }
+        
+          if (!order.employeeOfficeName) {
+            updatedOrder.officeStatus = "Not Assigned";
+          } else if (order.officeStatus === "Not Assigned") {
+            updatedOrder.officeStatus = "Assigned";
+          }
+        
+          return updatedOrder;
+        });
+        
+        setRows(updatedOrders);
+        
     });
   };
 
@@ -343,7 +520,7 @@ const Work = () => {
   const handleOfficeCheckboxChange = async (orderId) => {
     if (user.userType === 'employee_office') {
       const orderRef = dbRef(db, `orders/${orderId}`);
-      await update(orderRef, { employeeOfficeName: user.name });
+      await update(orderRef, { employeeOfficeName: user.name }); // Update the field with the office employee's name
       setRows((prevRows) =>
         prevRows.map((row) =>
           row.id === orderId ? { ...row, employeeOfficeName: user.name } : row
@@ -351,16 +528,52 @@ const Work = () => {
       );
     }
   };
+  
 
   const handleFieldWorkerChange = async (orderId, fieldWorkerName) => {
     const orderRef = dbRef(db, `orders/${orderId}`);
-    await update(orderRef, { employeeFieldName: fieldWorkerName });
+  
+    const currentRow = rows.find((row) => row.id === orderId);
+  
+    if (!currentRow) {
+      console.error(`Order with ID ${orderId} not found in rows`);
+      return;
+    }
+  
+    let currentStatus = currentRow.fieldStatus || "Not Assigned";
+    let newStatus = currentStatus;
+  
+    if (fieldWorkerName) {
+      if (currentStatus === "Not Assigned") {
+        newStatus = "Assigned";
+      } else {
+        // Keep the current status if it's beyond "Assigned"
+        newStatus = currentStatus;
+      }
+    } else {
+      newStatus = "Not Assigned";
+    }
+  
+    await update(orderRef, {
+      employeeFieldName: fieldWorkerName || null,
+      fieldStatus: newStatus,
+    });
+  
     setRows((prevRows) =>
       prevRows.map((row) =>
-        row.id === orderId ? { ...row, employeeFieldName: fieldWorkerName } : row
+        row.id === orderId
+          ? {
+              ...row,
+              employeeFieldName: fieldWorkerName || null,
+              fieldStatus: newStatus,
+            }
+          : row
       )
     );
   };
+  
+  
+  
 
   const handleFileUpload = async (orderId, event) => {
     const auth = getAuth();
@@ -432,7 +645,6 @@ const Work = () => {
   };
   
 
-  // Render file icons in the table
   const renderFileIcons = (params) => {
     const files = params.row.files || [];
     return (
@@ -440,7 +652,9 @@ const Work = () => {
         {files.map((file) => {
           let icon;
           const lowerCaseFile = file.name.toLowerCase();
+  
           if (lowerCaseFile.endsWith('.pdf')) {
+<<<<<<< Updated upstream
             icon = <PictureAsPdfIcon sx={{ color: 'red' }} />;
           } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg') || lowerCaseFile.endsWith('.JPG')) {
             icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
@@ -448,8 +662,23 @@ const Work = () => {
             icon = <VideoLibraryIcon  sx={{ color: 'primary' }}/>;
           } else {
             icon = <TextSnippetIcon  sx={{ color: 'primary' }}/>;
+=======
+            icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />;
+          } else if (
+            lowerCaseFile.endsWith('.jpg') || 
+            lowerCaseFile.endsWith('.png') || 
+            lowerCaseFile.endsWith('.jpeg')
+          ) {
+            icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
+          } else if (lowerCaseFile.endsWith('.mp4')) {
+            icon = <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />;
+          } else if (lowerCaseFile.endsWith('.txt')) {
+            icon = <DescriptionIcon sx={{ color: '#FFA500' }} />; // Use standard orange color
+          } else {
+            icon = <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />;
+>>>>>>> Stashed changes
           }
-
+  
           return (
             <IconButton
               key={file.name}
@@ -462,6 +691,7 @@ const Work = () => {
       </Box>
     );
   };
+  
 
   const statusStyle = (status) => ({
     display: 'flex',
@@ -470,6 +700,35 @@ const Work = () => {
     height: '100%',
     borderRadius: 2,
   });
+
+
+
+
+  const handleManagerOfficeChange = async (orderId, selectedEmployee) => {
+    const orderRef = dbRef(db, `orders/${orderId}`);
+    await update(orderRef, { employeeOfficeName: selectedEmployee === 'not-assigned' ? null : selectedEmployee });
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === orderId ? { ...row, employeeOfficeName: selectedEmployee === 'not-assigned' ? null : selectedEmployee } : row
+      )
+    );
+  };
+  
+// Function to fetch office employee data
+const fetchOfficeEmployees = () => {
+  const usersRef = dbRef(db, 'users/');
+  onValue(usersRef, (snapshot) => {
+    const data = snapshot.val();
+    const officeEmployeeList = data ? Object.values(data).filter(user => user.userType === 'employee_office') : [];
+    setOfficeEmployees(officeEmployeeList); // Set office employee list
+  });
+};
+
+// Fetch office employees when the component loads
+useEffect(() => {
+  fetchOfficeEmployees(); // Fetch office employees
+}, []);
+
 
   const columns = [
     { field: "serialNumber", headerName: "Serial Number", flex: 0.5, editable: false },
@@ -483,7 +742,7 @@ const Work = () => {
     {
       field: "orderPrivateNumber",
       headerName: "Order Private Number",
-      flex: 1,
+      flex: 2,
     },
     {
       field: "describeOrder",
@@ -497,31 +756,89 @@ const Work = () => {
       flex: 1,
       editable: (params) => isUserResponsible(params.row),
     },
+
+
+
+
+
+
     {
       field: "employeeOfficeName",
       headerName: "Office Employee",
-      flex: 1,
+      flex: 4,
       renderCell: (params) => {
-        if (params.value) {
+        const isManager = user.userType === 'manager';
+    
+        if (isManager) {
+          const isDisabled = params.row.fieldStatus !== "Success";
+    
           return (
-            <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              {params.value}
+            <Tooltip
+              title={
+                isDisabled
+                  ? 'Cannot assign an office employee until the field status is "Success".'
+                  : ''
+              }
+            >
+              <span>
+                <Select
+                  value={params.row.employeeOfficeName || ""}
+                  onChange={(e) => handleOfficeChange(params.row.id, e.target.value)}
+                  displayEmpty
+                  sx={{ width: '100%' }}
+                  disabled={isDisabled}
+                >
+                  <MenuItem value="" disabled>
+                    Not Assigned
+                  </MenuItem>
+                  {officeEmployees.map((employee) => (
+                    <MenuItem key={employee.name} value={employee.name}>
+                      {employee.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </span>
+            </Tooltip>
+          );
+        } else {
+          // For other users, display the assigned name or 'Not Assigned'
+          return (
+            <Typography
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+              }}
+            >
+              {params.row.employeeOfficeName || 'Not Assigned'}
             </Typography>
           );
         }
-        return (
-          <Checkbox
-            onChange={() => handleOfficeCheckboxChange(params.row.id)}
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-            disabled={user.userType !== 'employee_office'}
-          />
-        );
       },
     },
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     {
       field: "employeeFieldName",
       headerName: "Field Employee",
-      flex: 1,
+      flex: 4,
       renderCell: (params) => {
         // Only allow manager to edit this field
         if (user.userType === 'manager') {
@@ -550,44 +867,63 @@ const Work = () => {
       },
     },
     
-    {
-      field: "fieldStatus",
-      headerName: "Field Status",
-      flex: 1,
-      renderCell: (params) => (
-        <Box sx={statusStyle(params.value)}>
-          <StatusButton
-            initialStatus={params.value}
-            type="fieldStatus"
-            orderId={params.row.id}
-            updateOrderStatus={updateOrderStatus}
-            disabled={!isUserResponsible(params.row)}
-          />
-        </Box>
-      ),
-      editable: false,
-    },
+    // For fieldStatus
+{
+  field: "fieldStatus",
+  headerName: "Field Status",
+  flex: 3,
+  renderCell: (params) => {
+    const isDisabled = !params.row.employeeFieldName;
+
+    return (
+      <Box sx={statusStyle(params.value)}>
+        <StatusButton
+          initialStatus={params.value}
+          type="fieldStatus"
+          orderId={params.row.id}
+          updateOrderStatus={updateOrderStatus}
+          disabled={isDisabled}
+          userType={user.userType} // Pass userType here
+        />
+      </Box>
+    );
+  },
+  editable: false,
+},
+
+    
+  
     {
       field: "officeStatus",
       headerName: "Office Status",
-      flex: 1,
-      renderCell: (params) => (
-        <Box sx={statusStyle(params.value)}>
-          <StatusButton
-            initialStatus={params.value}
-            type="officeStatus"
-            orderId={params.row.id}
-            updateOrderStatus={updateOrderStatus}
-            disabled={!isUserResponsible(params.row)}
-          />
-        </Box>
-      ),
+      flex: 3,
+      renderCell: (params) => {
+        const isDisabled =
+          !isUserResponsible(params.row) ||
+          !params.row.employeeOfficeName ||
+          params.row.employeeOfficeName === "Not Assigned";
+    
+        return (
+          <Box sx={statusStyle(params.value)}>
+            <StatusButton
+              initialStatus={params.value}
+              type="officeStatus"
+              orderId={params.row.id}
+              updateOrderStatus={updateOrderStatus}
+              disabled={!params.row.employeeOfficeName} // Disable if no employee assigned
+            />
+          </Box>
+        );
+      },
       editable: false,
     },
+    
+    
+    
     {
       field: "files",
       headerName: "Files",
-      flex: 1,
+      flex: 8,
       renderCell: renderFileIcons,
     },
 
@@ -625,27 +961,29 @@ const Work = () => {
       filterable: false,
     }
     
-    
-
-
     ,
+
+
     {
-      
-        field: "action",
-        headerName: "Action",
-        flex: 1,
-        renderCell: (params) => (
-          <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
-            {/* Delete Button */}
+      field: "action",
+      headerName: "Action",
+      flex: 5,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+          {/* Delete Button */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <IconButton
               onClick={() => handleDeleteRow(params.row)}
               color="warning"
-              disabled={user.userType === 'field_worker'}
+              disabled={user.userType === 'field_worker' || user.userType === 'employee_office'}
             >
               <DeleteIcon />
             </IconButton>
-            
-            {/* Upload Button */}
+            <Typography variant="caption">Delete</Typography>
+          </Box>
+    
+          {/* Upload Button */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <IconButton component="label" color="primary" disabled={!isUserResponsible(params.row)}>
               <CloudUploadIcon sx={{ color: colors.grey[100] }} />
               <input
@@ -654,17 +992,20 @@ const Work = () => {
                 onChange={(event) => handleFileUpload(params.row.id, event)}
               />
             </IconButton>
-            
-            {/* Download All Files Button */}
+            <Typography variant="caption">Upload</Typography>
+          </Box>
+    
+          {/* Download All Files Button */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
               <DownloadIcon sx={{ color: colors.grey[100] }} />
             </IconButton>
+            <Typography variant="caption">Download All</Typography>
           </Box>
-        ),
-        sortable: false,
-        filterable: false,
-      
-      
+        </Box>
+      ),
+      sortable: false,
+      filterable: false,
     }
     ,
   ];
@@ -722,7 +1063,9 @@ const Work = () => {
           processRowUpdate={handleProcessRowUpdate}
           getRowClassName={(params) => getRowClass(params.row)}
           slots={{ toolbar: GridToolbar }}
+          
         />
+        
       </Box>
       <Snackbar
         open={snackbarOpen}

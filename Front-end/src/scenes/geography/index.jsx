@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Typography, useTheme, Card, CardContent, Grid, Select, MenuItem } from "@mui/material";
+import { Box, Button, Typography, useTheme, Card, CardContent, Grid, Select } from "@mui/material";
 import Header from "../../components/Header";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 import { ref as dbRef, onValue } from 'firebase/database';
 import { db } from "../../firebase";
 import { tokens } from "../../theme";
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import { IconButton } from "@mui/material";
+import {
+     MenuItem, Dialo
+} from "@mui/material";
+
+// Define the libraries array outside the component
+const libraries = ["places"];
 
 const containerStyle = {
   width: "100%",
@@ -23,13 +31,14 @@ const Geography = () => {
   const [markers, setMarkers] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [filteredMarkers, setFilteredMarkers] = useState([]);
+  const [selectedMarker, setSelectedMarker] = useState(null); // Track selected marker for pop-up
   const [selectedColor, setSelectedColor] = useState("all");
   const [dateFilter, setDateFilter] = useState(false);
 
-  // Load the Google Maps API
+  // Load the Google Maps API using the libraries array
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyAfzJl_kuLF-4BygyRvc_mf5NGGEYBPsKU",
-    libraries: ["places"],
+    libraries, // Use the constant libraries array
   });
 
   // Fetch customers once on component mount
@@ -106,10 +115,8 @@ const Geography = () => {
   };
 
   return (
-<Box 
-    m="20px" 
-   
-  >      <Header title="Geography Vizo Map" subtitle="Visualize locations for current and previous work orders" />
+    <Box m="20px">
+      <Header title="Geography Vizo Map" subtitle="Visualize locations for current and previous work orders" />
 
       {/* Filter Controls */}
       <Box display="flex" gap={2} mb={4}>
@@ -128,8 +135,8 @@ const Geography = () => {
           variant={dateFilter ? "contained" : "outlined"}
           onClick={() => setDateFilter((prev) => !prev)}
           sx={{
-            color: '#4caf50', // Set text color to white
-            borderColor: '#4caf50', // Ensure the outline also appears in white when in "outlined" mode
+            color: '#4caf50',
+            borderColor: '#4caf50',
           }}
         >
           {dateFilter ? "Show All" : "Show Oldest 10 Orders"}
@@ -145,75 +152,74 @@ const Geography = () => {
             zoom={10}
           >
             {filteredMarkers.map((marker, index) => (
-  <Marker
-    key={marker.id || index}  // Ensure each marker has a unique key
-    position={marker.position}
-    label={{
-      text: `${marker.position.lat.toFixed(4)}, ${marker.position.lng.toFixed(4)}`,
-      color: marker.color,
-    }}
-    icon={{
-      url: `http://maps.google.com/mapfiles/ms/icons/${marker.color}-dot.png`,  // Marker color based on assigned worker
-    }}
-  />
-))}
-
+              <Marker
+                key={marker.id || index} // Ensure each marker has a unique key
+                position={marker.position}
+                label={{
+                  text: `${marker.position.lat.toFixed(4)}, ${marker.position.lng.toFixed(4)}`,
+                  color: marker.color,
+                }}
+                icon={{
+                  url: `http://maps.google.com/mapfiles/ms/icons/${marker.color}-dot.png`,
+                }}
+                onClick={() => setSelectedMarker(marker)} // Set selected marker on click
+              />
+            ))}
           </GoogleMap>
         )}
       </Box>
 
-      {/* Marker Information */}
-      <Box mt={4}>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Markers Information
-        </Typography>
-        <Grid container spacing={2}>
-          {filteredMarkers.map((marker) => (
-            <Grid item xs={12} sm={6} md={4} key={marker.id}>
-              <Card sx={{ backgroundColor: colors.primary[400], color: colors.grey[100], boxShadow: `0 4px 10px ${colors.blueAccent[500]}`, borderRadius: '12px' }}>
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    Order #{marker.orderPrivateNumber}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Order Private Number: {marker.orderPrivateNumber}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Coordinates: {marker.position.lat.toFixed(4)}, {marker.position.lng.toFixed(4)}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Field Worker: {marker.employeeFieldName || "No Name Yet"}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Office Employee: {marker.employeeOfficeName || "No Name Yet"}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Description: {marker.describeOrder || "No Description"}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Customer Name: {marker.customerName || "Unknown Customer"}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Customer Phone: {marker.customerPhone || "No Phone Available"}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Is Completed: {marker.isCompletedStatus}
-                  </Typography>
-                  <Button
-                    startIcon={<DeleteIcon />}
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => handleDeleteMarker(marker.id)}
-                    sx={{ mt: 2 }}
-                  >
-                    Delete Marker
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
+      {/* Pop-up Marker Information */}
+      {selectedMarker && (
+        <Box sx={{
+          position: 'fixed',
+          top: '20%',
+          left: '50%',
+          transform: 'translate(-50%, -20%)',
+          zIndex: 9999,
+          backgroundColor: colors.primary[400],
+          color: colors.grey[100],
+          padding: 2,
+          borderRadius: '12px',
+          boxShadow: `0 4px 10px ${colors.blueAccent[500]}`,
+          width: '400px'
+        }}>
+          <IconButton
+            sx={{ position: 'absolute', top: '5px', right: '5px' }}
+            onClick={() => setSelectedMarker(null)}
+          >
+            <CloseIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+            Order #{selectedMarker.orderPrivateNumber}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Order Private Number: {selectedMarker.orderPrivateNumber}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Coordinates: {selectedMarker.position.lat.toFixed(4)}, {selectedMarker.position.lng.toFixed(4)}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Field Worker: {selectedMarker.employeeFieldName || "No Name Yet"}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Office Employee: {selectedMarker.employeeOfficeName || "No Name Yet"}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Description: {selectedMarker.describeOrder || "No Description"}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Customer Name: {selectedMarker.customerName || "Unknown Customer"}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Customer Phone: {selectedMarker.customerPhone || "No Phone Available"}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Is Completed: {selectedMarker.isCompletedStatus}
+          </Typography>
+          
+        </Box>
+      )}
     </Box>
   );
 };

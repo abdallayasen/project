@@ -172,12 +172,22 @@ const Sidebar = () => {
               Manage
             </Typography>
             <Item
+<<<<<<< Updated upstream
               title="My Work"
               to="/manager/mywork"
               icon={<HomeOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
+=======
+  title={user?.userType === 'manager' ? "Order Confirmation" : "My Works"}  // Conditional title
+  to="/manager/mywork"
+  icon={<WorkIcon sx={{ color: iconColor }} />}
+  selected={selected}
+  setSelected={setSelected}
+/>
+
+>>>>>>> Stashed changes
             <Item
               title="Work Management"
               to="/manager/work"
@@ -205,6 +215,7 @@ const Sidebar = () => {
               Information
             </Typography>
                 <Item
+<<<<<<< Updated upstream
                   title="Orders Info"
                   to="/manager/orders"
                   icon={<ContactsOutlinedIcon />}
@@ -212,6 +223,8 @@ const Sidebar = () => {
                   setSelected={setSelected}
                 />
                 <Item
+=======
+>>>>>>> Stashed changes
                   title="Employee Info"
                   to="/manager/employee"
                   icon={<PeopleOutlinedIcon />}
@@ -243,6 +256,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
+<<<<<<< Updated upstream
             <Typography
               variant="h6"
               color={colors.grey[300]}
@@ -257,6 +271,9 @@ const Sidebar = () => {
   selected={selected}
   setSelected={setSelected}
 />
+=======
+          
+>>>>>>> Stashed changes
 
 
            
