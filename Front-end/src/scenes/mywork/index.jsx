@@ -449,11 +449,20 @@ const MyWork = () => {
               ))}
             </Select>
             <Button
-              sx={{ ml: 2, backgroundColor: colors.greenAccent[400] }}
+              sx={{ ml: 2, backgroundColor: colors.greenAccent[500] }}
               onClick={() => setConfirmationDialogOpen(true)}
               disabled={!selectedOrder}
             >
+
+            <Typography
+              sx={{
+                color: colors.grey[100], // Change text color
+                textTransform: 'none', // Prevent uppercase transformation
+              }}
+            >
               Confirm Completion
+            </Typography>
+              
             </Button>
           </>
         )}

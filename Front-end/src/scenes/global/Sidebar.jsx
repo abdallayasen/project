@@ -19,8 +19,7 @@ import { UserContext } from '../../context/UserContext';
 import UserImage from '../../Assets/Icons/user2.png'; 
 import SignUp from '../../components/LoginPage/SignUp'; 
 import AddOrder from '../../scenes/orders/AddOrder';  // Import AddOrder component
-import sidebarImageDark from '../../Assets/Icons/sidebar-image.jpg';  // Dark mode image
-import sidebarImageLight from '../../Assets/Icons/Sidebar-Background_white.jpg';  
+ 
 
 const Item = ({ title, to, icon, selected, setSelected, onClick }) => {
   const theme = useTheme();
@@ -35,7 +34,7 @@ const Item = ({ title, to, icon, selected, setSelected, onClick }) => {
       }}
       icon={icon}
     >
-      <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+      <Typography variant="h6">
         {title}
       </Typography>
       {to && <Link to={to} />}
@@ -51,8 +50,6 @@ const Sidebar = () => {
   const [isSignUpOpen, setSignUpOpen] = useState(false); 
   const [isAddOrderOpen, setAddOrderOpen] = useState(false);  // State for Add Order pop-up
   const { user } = useContext(UserContext); 
-  const sidebarImage = theme.palette.mode === 'dark' ? sidebarImageDark : sidebarImageLight;
-  const iconColor = theme.palette.mode === 'light' ? '#030132' : '#00ffec';
 
   const openSignUp = () => {
     setSignUpOpen(true);
@@ -74,25 +71,32 @@ const Sidebar = () => {
     <Box
       sx={{
         height: '100vh',
-        backgroundImage: `url(${sidebarImage})`,  // Use the correct background image based on theme
-        backgroundSize: 'cover',                  // Ensure the image covers the entire area
         backgroundRepeat: 'no-repeat',            // Prevent repeating the image
         backgroundPosition: 'center',             // Center the background image
         "& .pro-sidebar-inner": {
-          backgroundColor: "transparent !important",  // Remove any background color
+          background: `${colors.primary[400]} !important`,
         },
         "& .pro-icon-wrapper": {
           backgroundColor: "transparent !important",
         },
+        // "& .pro-inner-item": {
+        //   padding: "5px 35px 5px 20px !important",
+        // },
+        // '&.active, &:focus, &:hover': {
+        //   backgroundColor: 'transparent',  // Prevent gray background on click
+        //   color: colors.grey[100],         // Ensure text color remains the same
+        // },
+        // "& .pro-sidebar": {
+        //   boxShadow: "none !important",  // Remove any box shadow
+        // },
         "& .pro-inner-item": {
           padding: "5px 35px 5px 20px !important",
         },
-        '&.active, &:focus, &:hover': {
-          backgroundColor: 'transparent',  // Prevent gray background on click
-          color: colors.grey[100],         // Ensure text color remains the same
+        "& .pro-inner-item:hover": {
+          color: "#868dfb !important",
         },
-        "& .pro-sidebar": {
-          boxShadow: "none !important",  // Remove any box shadow
+        "& .pro-menu-item.active": {
+          color: "#6870fa !important",
         },
       }}
     >
@@ -111,7 +115,7 @@ const Sidebar = () => {
                 alignItems="center"
                 ml="15px"
               >
-                <Typography variant="h4" color={colors.grey[100]} sx={{ fontWeight: "bold" }}>
+                <Typography variant="h4" color={colors.grey[100]} >
                   GraphMap
                 </Typography>
                 <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
@@ -141,7 +145,7 @@ const Sidebar = () => {
                 >
                   {user?.userType?.charAt(0).toUpperCase() + user?.userType?.slice(1)}
                 </Typography>
-                <Typography variant="h5" color={colors.greenAccent[500]} sx={{ fontWeight: "bold" }}>
+                <Typography variant="h5" color={colors.greenAccent[500]}>
                   {user?.name}
                 </Typography>
               </Box>
@@ -150,10 +154,10 @@ const Sidebar = () => {
 
 <Box paddingLeft={isCollapsed ? undefined : "10%"}>
 <MenuItem
-  icon={<HomeOutlinedIcon sx={{ color: iconColor  }} />}  // Set the correct icon color
+  icon={<HomeOutlinedIcon/>}  // Set the correct icon color
   style={{ color: colors.grey[100] }}  // Ensure the text color is consistent with others
 >
-  <Typography variant="h5" sx={{ fontWeight: "bold", color: colors.grey[100] }}>
+  <Typography variant="h5" sx={{ color: colors.grey[100] }}>
     Home
   </Typography>
   <Link to="/manager/dashboard" />
@@ -162,29 +166,29 @@ const Sidebar = () => {
 
             <Typography
               variant="h6"
-              color="#451d1d"
-              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
+              color={colors.grey[300]}
+              sx={{ m: "15px 0 5px 20px" }}
             >
               Manage
             </Typography>
             <Item
               title="My Work"
               to="/manager/mywork"
-              icon={<WorkIcon sx={{ color:iconColor  }} />}
+              icon={<HomeOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Work Management"
               to="/manager/work"
-              icon={<PreviewIcon sx={{ color: iconColor  }}/>}
+              icon={<PreviewIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="All Work"
               to="/manager/allwork"
-              icon={<WorkHistoryIcon sx={{ color: iconColor  }}/>}
+              icon={<WorkHistoryIcon/>}
               selected={selected}
               setSelected={setSelected}
             />
@@ -195,29 +199,29 @@ const Sidebar = () => {
               <>
                <Typography
               variant="h6"
-              color="#451d1d"
-              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
+              color={colors.grey[300]}
+              sx={{ m: "15px 0 5px 20px" }}
             >
               Information
             </Typography>
                 <Item
                   title="Orders Info"
                   to="/manager/orders"
-                  icon={<ContactsOutlinedIcon sx={{ color: iconColor  }}/>}
+                  icon={<ContactsOutlinedIcon />}
                   selected={selected}
                   setSelected={setSelected}
                 />
                 <Item
                   title="Employee Info"
                   to="/manager/employee"
-                  icon={<PeopleOutlinedIcon sx={{ color: iconColor  }}/>}
+                  icon={<PeopleOutlinedIcon />}
                   selected={selected}
                   setSelected={setSelected}
                 />
                 <Item
                   title="Clients Info"
                   to="/manager/customer"
-                  icon={<ContactsOutlinedIcon sx={{ color: iconColor  }}/>}
+                  icon={<ContactsOutlinedIcon />}
                   selected={selected}
                   setSelected={setSelected}
                 />
@@ -226,30 +230,30 @@ const Sidebar = () => {
 
             <Typography
               variant="h6"
-              color="#451d1d"
-              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
+              color={colors.grey[300]}
+              sx={{ m: "15px 0 5px 20px" }}
             >
               Charts
             </Typography>
             <Item
               title="Geography Chart"
               to="/manager/geography"
-              icon={<MapOutlinedIcon sx={{ color: iconColor  }}/>}
+              icon={<MapOutlinedIcon/>}
               selected={selected}
               setSelected={setSelected}
             />
 
             <Typography
               variant="h6"
-              color="#451d1d"
-              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
+              color={colors.grey[300]}
+              sx={{ m: "15px 0 5px 20px" }}
             >
                 Tools
             </Typography>
             <Item
   title="Calendar"
   to="/manager/calendar"
-  icon={<CalendarTodayOutlinedIcon sx={{ color: iconColor  }}/>}
+  icon={<CalendarTodayOutlinedIcon />}
   selected={selected}
   setSelected={setSelected}
 />
@@ -260,27 +264,27 @@ const Sidebar = () => {
               <>
                <Typography
               variant="h6"
-              color="#451d1d"
-              sx={{ m: "15px 0 5px 20px", fontWeight: "bold" }}
+              color={colors.grey[300]}
+              sx={{ m: "15px 0 5px 20px" }}
             >
               Add
             </Typography>
                 <MenuItem
-                  icon={<AddIcon sx={{ color: iconColor }}/>}
+                  icon={<AddIcon />}
                   onClick={openAddOrder}  // Open Add Order pop-up
                   style={{ color: colors.grey[100] }}
                 >
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  <Typography variant="h6" >
                     Add Order
                   </Typography>
                 </MenuItem>
 
                 <MenuItem
-                  icon={<AddIcon sx={{ color: iconColor }}/>}
+                  icon={<AddIcon />}
                   onClick={openSignUp}  // Open Sign Up pop-up
                   style={{ color: colors.grey[100] }}
                 >
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  <Typography variant="h6">
                     Sign Up
                   </Typography>
                 </MenuItem>

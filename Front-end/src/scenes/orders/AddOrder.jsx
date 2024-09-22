@@ -108,7 +108,7 @@ const handleAddOrder = async () => {
 
   return (
     <Dialog open={true} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ backgroundColor: colors.primary[400], backgroundColor: colors.greenAccent[500],textAlign: 'center' , fontSize: '24px'  }}>
+      <DialogTitle sx={{ backgroundColor: colors.primary[400], backgroundColor: colors.greenAccent[600],textAlign: 'center' , fontSize: '24px'  }}>
         Add New Order
       </DialogTitle>
       <DialogContent sx={{ backgroundColor: colors.primary[400], color: colors.grey[100], padding: '20px' }}>
@@ -204,7 +204,7 @@ const handleAddOrder = async () => {
         <Button onClick={handleClose} sx={{ backgroundColor: colors.redAccent[500], color: colors.grey[100] }}>
           Cancel
         </Button>
-        <Button onClick={handleAddOrder} sx={{ backgroundColor: colors.greenAccent[500], color: colors.grey[100] }}>
+        <Button onClick={handleAddOrder} sx={{ backgroundColor: colors.greenAccent[600], color: colors.grey[100] }}>
           Add Order
         </Button>
       </DialogActions>

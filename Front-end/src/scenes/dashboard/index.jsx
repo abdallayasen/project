@@ -3,11 +3,14 @@ import { Box, Button, TextField, Card, IconButton } from '@mui/material';
 import { ref, onValue, set } from 'firebase/database';  // Firebase imports
 import { db } from '../../firebase';  // Firebase instance
 import DeleteIcon from '@mui/icons-material/Delete';
+import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+
 import Header from '../../components/Header';
 import { UserContext } from '../../context/UserContext';  // Import the UserContext to get the current user
 
 // Colors for sticky notes
-const colors = ['#FF0000', '#FF1493', '#FFA500', '#800080', '#008000', '#0000FF', '#A52A2A'];
+const colors = ['#e55656', '#e784ea', '#d8dc7d', '#1b94b8', '#90ea84', '#2db0f1', '#b784ea'];
 
 const Dashboard = () => {
   const [notes, setNotes] = useState([]);
@@ -67,7 +70,7 @@ const Dashboard = () => {
       m="20px" 
   >      <Box display="flex" justifyContent="space-between" alignItems="center" >
         <Header title="Home" subtitle="Welcome to your dashboard" />
-        <Button variant="contained" color="primary" onClick={addNote}>
+        <Button variant="contained" color="secondary" onClick={addNote}>
           Add Sticky Note
         </Button>
       </Box>
@@ -98,19 +101,19 @@ const Dashboard = () => {
                 value={note.text}
                 onChange={(e) => updateNote(note.id, e.target.value)}
                 InputProps={{
-                  sx: { color: 'black' },
-                }}
-                InputLabelProps={{
-                  sx: { color: 'white' },
+                  sx: { color: 'black'
+
+
+                  },
                 }}
               />
             </Box>
             <IconButton
               onClick={() => deleteNote(note.id)}
-              color="error"
-              sx={{ alignSelf: 'flex-end' }}
+              color="black"
+              sx={{ alignSelf: 'center' }}
             >
-              <DeleteIcon />
+              <ClearRoundedIcon  />
             </IconButton>
           </Card>
         ))}

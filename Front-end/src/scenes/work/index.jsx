@@ -20,6 +20,8 @@ import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import TextSnippetIcon from '@mui/icons-material/TextSnippet';
+import DownloadIcon from '@mui/icons-material/Download';
 import { UserContext } from "../../context/UserContext";
 import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
@@ -439,13 +441,13 @@ const Work = () => {
           let icon;
           const lowerCaseFile = file.name.toLowerCase();
           if (lowerCaseFile.endsWith('.pdf')) {
-            icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />;
-          } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg')) {
+            icon = <PictureAsPdfIcon sx={{ color: 'red' }} />;
+          } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg') || lowerCaseFile.endsWith('.JPG')) {
             icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
-            icon = <VideoLibraryIcon  sx={{ color: colors.blueAccent[500] }}/>;
+            icon = <VideoLibraryIcon  sx={{ color: 'primary' }}/>;
           } else {
-            icon = <CloudDownloadIcon sx={{ color: colors.greenAccent[500]}} />;
+            icon = <TextSnippetIcon  sx={{ color: 'primary' }}/>;
           }
 
           return (
@@ -614,7 +616,7 @@ const Work = () => {
             }}
           >
             <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
-              <CommentIcon sx={{ color: colors.greenAccent[500]}}/>
+              <CommentIcon sx={{ color: colors.grey[100]}}/>
             </IconButton>
           </Badge>
         </Box>
@@ -645,7 +647,7 @@ const Work = () => {
             
             {/* Upload Button */}
             <IconButton component="label" color="primary" disabled={!isUserResponsible(params.row)}>
-              <CloudUploadIcon sx={{ color: colors.greenAccent[500] }} />
+              <CloudUploadIcon sx={{ color: colors.grey[100] }} />
               <input
                 type="file"
                 hidden
@@ -655,7 +657,7 @@ const Work = () => {
             
             {/* Download All Files Button */}
             <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
-              <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />
+              <DownloadIcon sx={{ color: colors.grey[100] }} />
             </IconButton>
           </Box>
         ),

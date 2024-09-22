@@ -88,8 +88,8 @@ const SignUp = ({ open, onClose }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} PaperProps={{ style: { borderRadius: 10, padding: '10px', maxWidth: '900px', backgroundColor: colors.primary[400] } }}>
-      <DialogTitle sx={{ backgroundColor: colors.greenAccent[500], textAlign: 'center', fontSize: '24px' }}>
+    <Dialog open={open} onClose={onClose} PaperProps={{ style: { borderRadius: 10, maxWidth: '900px', backgroundColor: colors.primary[400] } }}>
+      <DialogTitle sx={{ backgroundColor: colors.greenAccent[600], textAlign: 'center', fontSize: '24px' }}>
         Sign Up
       </DialogTitle>
       <DialogContent sx={{ backgroundColor: colors.primary[400], color: colors.grey[100] }} dividers>
@@ -196,7 +196,7 @@ const SignUp = ({ open, onClose }) => {
             sx={{ mb: 2, color: colors.grey[100] }}
           >
             <MenuItem value="" disabled>Select User Type</MenuItem>
-            <MenuItem value="customer">Customer</MenuItem>
+            {/* <MenuItem value="customer">Customer</MenuItem> */}
             <MenuItem value="employee_office">Employee Office</MenuItem>
             <MenuItem value="field_worker">Field Worker</MenuItem>
           </Select>
