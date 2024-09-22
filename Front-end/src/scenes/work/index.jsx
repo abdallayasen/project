@@ -654,15 +654,6 @@ const statusColors = {
           const lowerCaseFile = file.name.toLowerCase();
   
           if (lowerCaseFile.endsWith('.pdf')) {
-<<<<<<< Updated upstream
-            icon = <PictureAsPdfIcon sx={{ color: 'red' }} />;
-          } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg') || lowerCaseFile.endsWith('.JPG')) {
-            icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
-          } else if (lowerCaseFile.endsWith('.mp4')) {
-            icon = <VideoLibraryIcon  sx={{ color: 'primary' }}/>;
-          } else {
-            icon = <TextSnippetIcon  sx={{ color: 'primary' }}/>;
-=======
             icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />;
           } else if (
             lowerCaseFile.endsWith('.jpg') || 
@@ -676,7 +667,6 @@ const statusColors = {
             icon = <DescriptionIcon sx={{ color: '#FFA500' }} />; // Use standard orange color
           } else {
             icon = <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />;
->>>>>>> Stashed changes
           }
   
           return (
@@ -691,6 +681,7 @@ const statusColors = {
       </Box>
     );
   };
+  
   
 
   const statusStyle = (status) => ({
@@ -868,56 +859,159 @@ useEffect(() => {
     },
     
     // For fieldStatus
-{
-  field: "fieldStatus",
-  headerName: "Field Status",
-  flex: 3,
-  renderCell: (params) => {
-    const isDisabled = !params.row.employeeFieldName;
-
-    return (
-      <Box sx={statusStyle(params.value)}>
-        <StatusButton
-          initialStatus={params.value}
-          type="fieldStatus"
-          orderId={params.row.id}
-          updateOrderStatus={updateOrderStatus}
-          disabled={isDisabled}
-          userType={user.userType} // Pass userType here
-        />
-      </Box>
-    );
-  },
-  editable: false,
-},
-
+    {
+      field: "fieldStatus",
+      headerName: "Field Status",
+      flex: 4.5,
+      renderCell: (params) => {
+        
+        // Determine if the user is allowed to change the status
+        const isAssignedFieldWorker =
+          user.userType === 'field_worker' &&
+          params.row.employeeFieldName === user.name;
     
-  
+        const isManager = user.userType === 'manager';
+    
+        // The button is disabled if the user is neither the assigned field worker nor a manager
+        const isDisabled = !(isAssignedFieldWorker || isManager);
+    
+        const statusColors = {
+          "Assigned": "grey",
+          "Processing": "#19b8ba", // Updated color
+          "Revision": "#f58c0e",
+          "Success": "#2c8826",    // Updated color
+        };
+    
+        // Define the statuses available to the user
+        let statusOptions = [];
+        if (isManager) {
+          statusOptions = ['Assigned', 'Processing', 'Revision', 'Success'];
+
+        } 
+        else if (isAssignedFieldWorker) {
+          // Assigned field workers can set 'Assigned', 'Processing', 'Success'
+          statusOptions = ['Assigned', 'Processing', 'Success'];
+        } else {
+          // Other users cannot change the status
+          statusOptions = [];
+        }
+    
+        const handleClick = () => {
+          if (isDisabled) return;
+    
+          const currentStatus = params.value;
+          const currentIndex = statusOptions.indexOf(currentStatus);
+          const nextIndex = (currentIndex + 1) % statusOptions.length;
+          const newStatus = statusOptions[nextIndex];
+    
+          // Prevent field workers from setting the status to 'Revision'
+          if (newStatus === 'Revision' && !isManager) {
+            setSnackbarMessage('Only managers can set the status to "Revision".');
+            setSnackbarOpen(true);
+            return;
+          }
+    
+          // Update the status in the database and in the state
+          updateOrderStatus(params.row.id, 'fieldStatus', newStatus);
+        };
+    
+        return (
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: statusColors[params.value] || 'grey',
+              color: 'white',
+              textTransform: 'none',
+              fontSize: '12px',
+              padding: '6px 12px',
+              minWidth: '100px',
+              borderRadius: '9999px',
+            }}
+            onClick={handleClick}
+            disabled={isDisabled || statusOptions.length === 0}
+          >
+            {params.value}
+          </Button>
+        );
+      },
+    },
+    
+    
     {
       field: "officeStatus",
       headerName: "Office Status",
-      flex: 3,
+      flex: 4.5,
       renderCell: (params) => {
-        const isDisabled =
-          !isUserResponsible(params.row) ||
-          !params.row.employeeOfficeName ||
-          params.row.employeeOfficeName === "Not Assigned";
+        // Determine if the user is allowed to change the status
+        const isAssignedOfficeEmployee =
+          user.userType === 'employee_office' &&
+          params.row.employeeOfficeName === user.name;
+    
+        const isManager = user.userType === 'manager';
+    
+        // The button is disabled if the user is neither the assigned office employee nor a manager
+        const isDisabled = !(isAssignedOfficeEmployee || isManager);
+    
+        const statusColors = {
+          "Assigned": "grey",
+          "Processing": "#19b8ba", // Updated color
+          "Revision": "#f58c0e",
+          "Success": "#2c8826",    // Updated color
+        };
+    
+        // Define the statuses available to the user
+        let statusOptions = [];
+    
+        if (isManager) {
+          statusOptions = ['Assigned', 'Processing', 'Revision', 'Success'];
+
+        } else if (isAssignedOfficeEmployee) {
+          // Assigned office employees can set 'Assigned', 'Processing', 'Success'
+          statusOptions = ['Assigned', 'Processing', 'Success'];
+        } else {
+          // Other users cannot change the status
+          statusOptions = [];
+        }
+    
+        const handleClick = () => {
+          if (isDisabled) return;
+    
+          const currentStatus = params.value;
+          const currentIndex = statusOptions.indexOf(currentStatus);
+          const nextIndex = (currentIndex + 1) % statusOptions.length;
+          const newStatus = statusOptions[nextIndex];
+    
+          // Prevent office employees from setting the status to 'Revision'
+          if (newStatus === 'Revision' && !isManager) {
+            setSnackbarMessage('Only managers can set the status to "Revision".');
+            setSnackbarOpen(true);
+            return;
+          }
+    
+          // Update the status in the database and in the state
+          updateOrderStatus(params.row.id, 'officeStatus', newStatus);
+        };
     
         return (
-          <Box sx={statusStyle(params.value)}>
-            <StatusButton
-              initialStatus={params.value}
-              type="officeStatus"
-              orderId={params.row.id}
-              updateOrderStatus={updateOrderStatus}
-              disabled={!params.row.employeeOfficeName} // Disable if no employee assigned
-            />
-          </Box>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: statusColors[params.value] || 'grey',
+              color: 'white',
+              textTransform: 'none',
+              fontSize: '12px',
+              padding: '6px 12px',
+              minWidth: '100px',
+              borderRadius: '9999px', // For curved shape
+            }}
+            onClick={handleClick}
+            disabled={isDisabled || statusOptions.length === 0}
+          >
+            {params.value}
+          </Button>
         );
       },
-      editable: false,
     },
-    
     
     
     {
@@ -931,7 +1025,7 @@ useEffect(() => {
     {
       field: "comments",
       headerName: "Posts",
-      flex: 1,
+      flex: 2,
       renderCell: (params) => (
         <Box 
           sx={{ 
@@ -967,7 +1061,7 @@ useEffect(() => {
     {
       field: "action",
       headerName: "Action",
-      flex: 5,
+      flex: 7,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           {/* Delete Button */}

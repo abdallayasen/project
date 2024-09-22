@@ -19,7 +19,6 @@ import { UserContext } from '../../context/UserContext';
 import UserImage from '../../Assets/Icons/user2.png'; 
 import SignUp from '../../components/LoginPage/SignUp'; 
 import AddOrder from '../../scenes/orders/AddOrder';  // Import AddOrder component
- 
 
 const Item = ({ title, to, icon, selected, setSelected, onClick }) => {
   const theme = useTheme();
@@ -50,6 +49,7 @@ const Sidebar = () => {
   const [isSignUpOpen, setSignUpOpen] = useState(false); 
   const [isAddOrderOpen, setAddOrderOpen] = useState(false);  // State for Add Order pop-up
   const { user } = useContext(UserContext); 
+  const iconColor = colors.grey[100]; // or any color you prefer
 
   const openSignUp = () => {
     setSignUpOpen(true);
@@ -171,15 +171,8 @@ const Sidebar = () => {
             >
               Manage
             </Typography>
-            <Item
-<<<<<<< Updated upstream
-              title="My Work"
-              to="/manager/mywork"
-              icon={<HomeOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-=======
+            
+    <Item
   title={user?.userType === 'manager' ? "Order Confirmation" : "My Works"}  // Conditional title
   to="/manager/mywork"
   icon={<WorkIcon sx={{ color: iconColor }} />}
@@ -187,7 +180,6 @@ const Sidebar = () => {
   setSelected={setSelected}
 />
 
->>>>>>> Stashed changes
             <Item
               title="Work Management"
               to="/manager/work"
@@ -215,16 +207,6 @@ const Sidebar = () => {
               Information
             </Typography>
                 <Item
-<<<<<<< Updated upstream
-                  title="Orders Info"
-                  to="/manager/orders"
-                  icon={<ContactsOutlinedIcon />}
-                  selected={selected}
-                  setSelected={setSelected}
-                />
-                <Item
-=======
->>>>>>> Stashed changes
                   title="Employee Info"
                   to="/manager/employee"
                   icon={<PeopleOutlinedIcon />}
@@ -256,24 +238,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
-<<<<<<< Updated upstream
-            <Typography
-              variant="h6"
-              color={colors.grey[300]}
-              sx={{ m: "15px 0 5px 20px" }}
-            >
-                Tools
-            </Typography>
-            <Item
-  title="Calendar"
-  to="/manager/calendar"
-  icon={<CalendarTodayOutlinedIcon />}
-  selected={selected}
-  setSelected={setSelected}
-/>
-=======
           
->>>>>>> Stashed changes
 
 
            

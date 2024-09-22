@@ -17,6 +17,7 @@ import StatusButton from '../../components/StatusButton';
 import Comments from '../../scenes/comments';
 import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';  // Make sure you have storage configured in your firebase.js
+import DescriptionIcon from '@mui/icons-material/Description';
 
 const AllWork = () => {
   const theme = useTheme();
@@ -103,6 +104,30 @@ const fetchFilesFromStorage = async (orderId) => {
     };
   });
 
+  const handleDownloadAllFiles = async (orderId) => {
+    const files = rows.find(row => row.id === orderId)?.files || [];
+    if (files.length === 0) {
+      setSnackbarMessage("No files to download.");
+      setSnackbarOpen(true);
+      return;
+    }
+  
+    for (const file of files) {
+      try {
+        const response = await fetch(file.url); // Fetch the file from the URL
+        const blob = await response.blob(); // Convert response to blob
+        const link = document.createElement('a'); // Create a link element
+        link.href = URL.createObjectURL(blob); // Create object URL from blob
+        link.download = file.name; // Set the download attribute with file name
+        link.click(); // Programmatically click the link to trigger download
+      } catch (error) {
+        console.error(`Error downloading file ${file.name}:`, error);
+        setSnackbarMessage(`Failed to download ${file.name}`);
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
   const handleSnackbarClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -132,12 +157,7 @@ const fetchFilesFromStorage = async (orderId) => {
     }
   };
 
-  const handleDownloadAllFiles = async (orderId) => {
-    const files = rows.find(row => row.id === orderId)?.files || [];
-    for (const file of files) {
-      await handleFileDownload(file);
-    }
-  };
+  
 
   const renderFileIcons = (params) => {
     const files = params.row.files || [];
@@ -146,21 +166,33 @@ const fetchFilesFromStorage = async (orderId) => {
         {files.map((file) => {
           let icon;
           const lowerCaseFile = file.name.toLowerCase();
+
           if (lowerCaseFile.endsWith('.pdf')) {
-            icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }}/>;
-          } else if (lowerCaseFile.endsWith('.jpg') || lowerCaseFile.endsWith('.png') || lowerCaseFile.endsWith('.jpeg')) {
-            icon = <ImageIcon sx={{ color: "Red" , fontSize: 20 }} />;
+            icon = (
+              <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />
+            );
+          } else if (
+            lowerCaseFile.endsWith('.jpg') ||
+            lowerCaseFile.endsWith('.png') ||
+            lowerCaseFile.endsWith('.jpeg')
+          ) {
+            icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
-            icon = <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />;
+            icon = (
+              <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />
+            );
+          } else if (lowerCaseFile.endsWith('.txt')) {
+            icon = (
+              <DescriptionIcon sx={{ color: '#FFA500' }} /> // Use standard orange color
+            );
           } else {
-            icon = <CloudDownloadIcon sx={{ color: colors.greenAccent[500]  }} />;
+            icon = (
+              <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />
+            );
           }
 
           return (
-            <IconButton
-              key={file.name}
-              onClick={() => handleFileDownload(file)}
-            >
+            <IconButton key={file.name} onClick={() => handleFileDownload(file)}>
               {icon}
             </IconButton>
           );
@@ -189,7 +221,7 @@ const fetchFilesFromStorage = async (orderId) => {
     {
       field: "orderPrivateNumber",
       headerName: "Order Private Number",
-      flex: 1,
+      flex: 2,
     },
     {
       field: "describeOrder",
@@ -204,7 +236,7 @@ const fetchFilesFromStorage = async (orderId) => {
     {
       field: "employeeOfficeName",
       headerName: "Office Employee",
-      flex: 1,
+      flex: 4,
       renderCell: (params) => (
         <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           {params.value}
@@ -214,7 +246,7 @@ const fetchFilesFromStorage = async (orderId) => {
     {
       field: "employeeFieldName",
       headerName: "Field Employee",
-      flex: 1,
+      flex: 4,
       renderCell: (params) => (
         <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           {params.value}
@@ -224,20 +256,20 @@ const fetchFilesFromStorage = async (orderId) => {
     {
       field: "client_id",
       headerName: "Client ID",
-      flex: 1,
+      flex: 2,
       editable: false,
     },
     {
       field: "files",
       headerName: "Files",
-      flex: 1,
+      flex: 8,
       renderCell: renderFileIcons,
     },
     
     {
       field: "comments",
       headerName: "Posts",
-      flex: 1,
+      flex: 1.5,
       renderCell: (params) => (
         <Box 
           sx={{ 
@@ -258,13 +290,14 @@ const fetchFilesFromStorage = async (orderId) => {
     {
       field: "action",
       headerName: "Action",
-      flex: 1,
+      flex: 1.5,
       renderCell: (params) => (
+        
         <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
           <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
             <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />
           </IconButton>
-        </Box>
+          </Box>
       ),
       sortable: false,
       filterable: false,

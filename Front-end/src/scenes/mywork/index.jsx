@@ -331,7 +331,7 @@ const MyWork = () => {
     {
       field: 'orderPrivateNumber',
       headerName: 'Order Private Number',
-      flex: 1,
+      flex: 2,
     },
     {
       field: 'describeOrder',
@@ -346,17 +346,17 @@ const MyWork = () => {
     {
       field: 'employeeOfficeName',
       headerName: 'Office Employee',
-      flex: 1,
+      flex: 4,
     },
     {
       field: 'employeeFieldName',
       headerName: 'Field Employee',
-      flex: 1,
+      flex: 4,
     },
     {
       field: "fieldStatus",
       headerName: "Field Status",
-      flex: 1,
+      flex: 4.5,
       renderCell: (params) => {
         
         // Determine if the user is allowed to change the status
@@ -434,7 +434,7 @@ const MyWork = () => {
     {
       field: "officeStatus",
       headerName: "Office Status",
-      flex: 1,
+      flex: 4.5,
       renderCell: (params) => {
         // Determine if the user is allowed to change the status
         const isAssignedOfficeEmployee =
@@ -511,13 +511,13 @@ const MyWork = () => {
     {
       field: 'files',
       headerName: 'Files',
-      flex: 1,
+      flex: 8,
       renderCell: renderFileIcons,
     },
     {
       field: 'comments',
       headerName: 'Posts',
-      flex: 1,
+      flex: 2,
       renderCell: (params) => (
         <Box
           sx={{
@@ -549,7 +549,7 @@ const MyWork = () => {
     {
       field: 'action',
       headerName: 'Action',
-      flex: 5,
+      flex: 7,
       renderCell: (params) => (
         <Box
           sx={{
