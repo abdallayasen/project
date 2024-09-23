@@ -105,7 +105,7 @@ const fetchFilesFromStorage = async (orderId) => {
   });
 
   const handleDownloadAllFiles = async (orderId) => {
-    const files = rows.find(row => row.id === orderId)?.files || [];
+    const files = rowsWithCustomerInfo.find(row => row.id === orderId)?.files || [];
     if (files.length === 0) {
       setSnackbarMessage("No files to download.");
       setSnackbarOpen(true);
@@ -114,12 +114,15 @@ const fetchFilesFromStorage = async (orderId) => {
   
     for (const file of files) {
       try {
-        const response = await fetch(file.url); // Fetch the file from the URL
-        const blob = await response.blob(); // Convert response to blob
-        const link = document.createElement('a'); // Create a link element
-        link.href = URL.createObjectURL(blob); // Create object URL from blob
-        link.download = file.name; // Set the download attribute with file name
-        link.click(); // Programmatically click the link to trigger download
+        const response = await fetch(file.url);
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = file.name;
+        link.click();
+  
+        // Clean up the URL object
+        URL.revokeObjectURL(link.href);
       } catch (error) {
         console.error(`Error downloading file ${file.name}:`, error);
         setSnackbarMessage(`Failed to download ${file.name}`);
@@ -127,6 +130,7 @@ const fetchFilesFromStorage = async (orderId) => {
       }
     }
   };
+  
 
   const handleSnackbarClose = (event, reason) => {
     if (reason === 'clickaway') {
