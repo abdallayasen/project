@@ -1,30 +1,10 @@
 // src/scenes/mywork/index.js
 
 import React, { useState, useEffect, useContext } from 'react';
-import {
-  Box,
-  Snackbar,
-  Alert,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Typography,
-  MenuItem,
-  Select,
-  Button,
-  Badge,
-  Tooltip,
-} from '@mui/material';
+import {Box,Snackbar,Alert,Dialog,DialogActions,DialogContent,DialogTitle,IconButton,Typography,MenuItem,Select,Button,Badge,Tooltip,} from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { ref as dbRef, onValue, update, remove } from 'firebase/database';
-import {
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-  listAll,
-} from 'firebase/storage';
+import {ref as storageRef,uploadBytes,getDownloadURL,listAll,} from 'firebase/storage';
 import { db, storage } from '../../firebase';
 import { getAuth } from 'firebase/auth';
 import Header from '../../components/Header';
@@ -36,6 +16,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DownloadIcon from '@mui/icons-material/Download';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { UserContext } from '../../context/UserContext';
@@ -277,17 +258,17 @@ const MyWork = () => {
 
           if (lowerCaseFile.endsWith('.pdf')) {
             icon = (
-              <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />
+              <PictureAsPdfIcon sx={{ color: 'red' }} />
             );
           } else if (
             lowerCaseFile.endsWith('.jpg') ||
             lowerCaseFile.endsWith('.png') ||
             lowerCaseFile.endsWith('.jpeg')
           ) {
-            icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
+            icon = <ImageIcon sx={{ color: 'green', fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
             icon = (
-              <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />
+              <VideoLibraryIcon sx={{ color: 'blue' }} />
             );
           } else if (lowerCaseFile.endsWith('.txt')) {
             icon = (
@@ -538,7 +519,7 @@ const MyWork = () => {
             }}
           >
             <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
-              <CommentIcon sx={{ color: colors.greenAccent[500] }} />
+              <CommentIcon sx={{ color: colors.grey[100] }} />
             </IconButton>
           </Badge>
         </Box>
@@ -585,7 +566,7 @@ const MyWork = () => {
               color='primary'
               disabled={!isUserResponsible(params.row)}
             >
-              <CloudUploadIcon sx={{ color: colors.greenAccent[500] }} />
+              <CloudUploadIcon sx={{ color: colors.grey[100] }} />
               <input
                 type='file'
                 hidden
@@ -600,7 +581,7 @@ const MyWork = () => {
             sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
           >
             <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color='primary'>
-              <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />
+              <DownloadIcon sx={{ color: colors.grey[100]}} />
             </IconButton>
             <Typography variant='caption'>Download All</Typography>
           </Box>
