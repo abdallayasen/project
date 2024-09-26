@@ -756,12 +756,14 @@ useEffect(() => {
     {
       field: "employeeOfficeName",
       headerName: "Office Employee",
-      flex: 4,
+      flex: 6,
       renderCell: (params) => {
         const isManager = user.userType === 'manager';
+        const isOfficeEmployee = user.userType === 'employee_office'; // Determine if the user is an office employee
+        const fieldStatus = params.row.fieldStatus; // Get the field status from the row
     
         if (isManager) {
-          const isDisabled = params.row.fieldStatus !== "Success";
+          const isDisabled = fieldStatus !== "Success";
     
           return (
             <Tooltip
@@ -791,6 +793,53 @@ useEffect(() => {
               </span>
             </Tooltip>
           );
+        } else if (isOfficeEmployee) { // Added block for office employees
+          if (!params.value) {
+            if (fieldStatus === "Success") {
+              // Office employee sees checkbox if no one is assigned and fieldStatus is "Success"
+              return (
+                <Checkbox
+                  onChange={() => handleOfficeCheckboxChange(params.row.id)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                  }}
+                  disabled={fieldStatus !== "Success"} // Disable if field status is not "Success"
+                />
+              );
+            } else {
+              // Display message if fieldStatus is not "Success"
+              return (
+                <Typography
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    color: 'black', // Optional: color the message to indicate restriction
+                  }}
+                >
+                  You cannot choose now
+                </Typography>
+              );
+            }
+          } else {
+            // Display the assigned name
+            return (
+              <Typography
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                }}
+              >
+                {params.value}
+              </Typography>
+            );
+          }
         } else {
           // For other users, display the assigned name or 'Not Assigned'
           return (
@@ -808,6 +857,7 @@ useEffect(() => {
         }
       },
     },
+    
     
     
     
@@ -829,7 +879,7 @@ useEffect(() => {
     {
       field: "employeeFieldName",
       headerName: "Field Employee",
-      flex: 4,
+      flex: 6,
       renderCell: (params) => {
         // Only allow manager to edit this field
         if (user.userType === 'manager') {
@@ -864,7 +914,14 @@ useEffect(() => {
       headerName: "Field Status",
       flex: 4.5,
       renderCell: (params) => {
-        
+    
+        // **NEW CODE START**
+        // If employeeFieldName is empty or "Not Assigned", set fieldStatus to "Not Assigned"
+        if (!params.row.employeeFieldName || params.row.employeeFieldName === "Not Assigned") {
+          params.row.fieldStatus = "Not Assigned";
+        }
+        // **NEW CODE END**
+    
         // Determine if the user is allowed to change the status
         const isAssignedFieldWorker =
           user.userType === 'field_worker' &&
@@ -873,20 +930,23 @@ useEffect(() => {
         const isManager = user.userType === 'manager';
     
         // The button is disabled if the user is neither the assigned field worker nor a manager
-        const isDisabled = !(isAssignedFieldWorker || isManager);
+        // **MODIFIED CODE START**
+        // Also disable if employeeFieldName is empty or "Not Assigned"
+        const isDisabled = !(isAssignedFieldWorker || isManager) || !params.row.employeeFieldName || params.row.employeeFieldName === "Not Assigned";
+        // **MODIFIED CODE END**
     
         const statusColors = {
           "Assigned": "grey",
           "Processing": "#19b8ba", // Updated color
           "Revision": "#f58c0e",
           "Success": "#2c8826",    // Updated color
+          "Not Assigned": "red",   // Color for "Not Assigned"
         };
     
         // Define the statuses available to the user
         let statusOptions = [];
         if (isManager) {
           statusOptions = ['Assigned', 'Processing', 'Revision', 'Success'];
-
         } 
         else if (isAssignedFieldWorker) {
           // Assigned field workers can set 'Assigned', 'Processing', 'Success'
@@ -937,6 +997,9 @@ useEffect(() => {
     },
     
     
+
+
+
     {
       field: "officeStatus",
       headerName: "Office Status",
@@ -949,14 +1012,17 @@ useEffect(() => {
     
         const isManager = user.userType === 'manager';
     
-        // The button is disabled if the user is neither the assigned office employee nor a manager
-        const isDisabled = !(isAssignedOfficeEmployee || isManager);
+        // Disable button if not assigned or not manager
+        const isDisabled =
+          !(isAssignedOfficeEmployee || isManager) ||
+          !params.row.employeeOfficeName;
     
         const statusColors = {
           "Assigned": "grey",
           "Processing": "#19b8ba", // Updated color
           "Revision": "#f58c0e",
           "Success": "#2c8826",    // Updated color
+          "Not Assigned": "red",   // Color for "Not Assigned"
         };
     
         // Define the statuses available to the user
@@ -964,7 +1030,6 @@ useEffect(() => {
     
         if (isManager) {
           statusOptions = ['Assigned', 'Processing', 'Revision', 'Success'];
-
         } else if (isAssignedOfficeEmployee) {
           // Assigned office employees can set 'Assigned', 'Processing', 'Success'
           statusOptions = ['Assigned', 'Processing', 'Success'];
@@ -992,11 +1057,22 @@ useEffect(() => {
           updateOrderStatus(params.row.id, 'officeStatus', newStatus);
         };
     
+        // Determine the display status
+        let displayStatus = params.value;
+    
+        if (!params.row.employeeOfficeName) {
+          displayStatus = "Not Assigned";
+        } else if (params.row.employeeOfficeName && !params.row.officeStatus) {
+          // If employeeOfficeName is set but officeStatus is empty, set it to "Assigned"
+          displayStatus = "Assigned";
+          // Note: Ideally, handle this in the assignment function to update the database
+        }
+    
         return (
           <Button
             variant="contained"
             sx={{
-              backgroundColor: statusColors[params.value] || 'grey',
+              backgroundColor: statusColors[displayStatus] || 'grey',
               color: 'white',
               textTransform: 'none',
               fontSize: '12px',
@@ -1007,11 +1083,16 @@ useEffect(() => {
             onClick={handleClick}
             disabled={isDisabled || statusOptions.length === 0}
           >
-            {params.value}
+            {displayStatus}
           </Button>
         );
       },
+      editable: false,
     },
+    
+    
+
+    
     
     
     {
