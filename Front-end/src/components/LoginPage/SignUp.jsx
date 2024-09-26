@@ -217,7 +217,7 @@ const SignUp = ({ open, onClose }) => {
             displayEmpty
           >
             <MenuItem value="" disabled>Select User Type</MenuItem>
-            {/* <MenuItem value="customer">Customer</MenuItem> */}
+            <MenuItem value="customer">Customer</MenuItem>
             <MenuItem value="employee_office">Employee Office</MenuItem>
             <MenuItem value="field_worker">Field Worker</MenuItem>
           </Select>

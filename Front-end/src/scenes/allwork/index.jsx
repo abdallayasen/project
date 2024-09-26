@@ -11,6 +11,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ImageIcon from '@mui/icons-material/Image';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import DownloadIcon from '@mui/icons-material/Download';
 import CommentIcon from '@mui/icons-material/Comment';
 import Header from "../../components/Header";
 import StatusButton from '../../components/StatusButton';
@@ -173,17 +174,17 @@ const fetchFilesFromStorage = async (orderId) => {
 
           if (lowerCaseFile.endsWith('.pdf')) {
             icon = (
-              <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />
+              <PictureAsPdfIcon sx={{ color: 'red' }} />
             );
           } else if (
             lowerCaseFile.endsWith('.jpg') ||
             lowerCaseFile.endsWith('.png') ||
             lowerCaseFile.endsWith('.jpeg')
           ) {
-            icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
+            icon = <ImageIcon sx={{ color: 'green', fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
             icon = (
-              <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />
+              <VideoLibraryIcon sx={{ color: 'blue' }} />
             );
           } else if (lowerCaseFile.endsWith('.txt')) {
             icon = (
@@ -284,7 +285,7 @@ const fetchFilesFromStorage = async (orderId) => {
           }}
         >
           <IconButton onClick={() => handleCommentsDialogOpen(params.row)}>
-            <CommentIcon sx={{ color: colors.greenAccent[500] }} />
+            <CommentIcon sx={{ color: colors.grey[100] }} />
           </IconButton>
         </Box>
       ),
@@ -299,7 +300,7 @@ const fetchFilesFromStorage = async (orderId) => {
         
         <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
           <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
-            <CloudDownloadIcon sx={{ color: colors.greenAccent[500] }} />
+            <DownloadIcon sx={{ color: colors.grey[100] }} />
           </IconButton>
           </Box>
       ),

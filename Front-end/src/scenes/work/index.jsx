@@ -654,15 +654,15 @@ const statusColors = {
           const lowerCaseFile = file.name.toLowerCase();
   
           if (lowerCaseFile.endsWith('.pdf')) {
-            icon = <PictureAsPdfIcon sx={{ color: colors.greenAccent[500] }} />;
+            icon = <PictureAsPdfIcon sx={{ color: 'red' }} />;
           } else if (
             lowerCaseFile.endsWith('.jpg') || 
             lowerCaseFile.endsWith('.png') || 
             lowerCaseFile.endsWith('.jpeg')
           ) {
-            icon = <ImageIcon sx={{ color: 'red', fontSize: 20 }} />;
+            icon = <ImageIcon sx={{ color: 'green', fontSize: 20 }} />;
           } else if (lowerCaseFile.endsWith('.mp4')) {
-            icon = <VideoLibraryIcon sx={{ color: colors.blueAccent[500] }} />;
+            icon = <VideoLibraryIcon sx={{ color: 'blue' }} />;
           } else if (lowerCaseFile.endsWith('.txt')) {
             icon = <DescriptionIcon sx={{ color: '#FFA500' }} />; // Use standard orange color
           } else {
