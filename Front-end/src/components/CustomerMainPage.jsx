@@ -37,7 +37,6 @@ const CustomerMainPage = () => {
             <Route path="allwork" element={<Allwork />} />
             <Route path="comments" element={<Comments />} />
             <Route path="/" element={<Navigate to="dashboard" />} />
-            <Route path="client-info" element={<ClientInfo />} />
           </Routes>
         </Box>
       </Box>

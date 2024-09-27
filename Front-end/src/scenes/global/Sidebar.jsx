@@ -267,7 +267,7 @@ const Sidebar = () => {
                   style={{ color: colors.grey[100] }}
                 >
                   <Typography variant="h6">
-                    Sign Up
+                  Registration
                   </Typography>
                 </MenuItem>
               </>

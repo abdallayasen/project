@@ -66,10 +66,14 @@ const MyWork = () => {
 
         // Filter orders based on user type
         const filteredOrders = orderList.filter((order) => {
-          if (user.userType === 'manager') {
-            // For manager, show all active orders
-            return !order.isCompleted;
-          }
+       if (user.userType === 'manager') {
+    // For manager, show only orders with both statuses as 'Success' and not completed
+    return (
+      !order.isCompleted &&
+      order.fieldStatus === 'Success' &&
+      order.officeStatus === 'Success'
+    );
+  }
           // For other user types, show orders assigned to them
           return (
             !order.isCompleted &&

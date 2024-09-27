@@ -26,15 +26,32 @@ const SignUp = ({ open, onClose }) => {
   const auth = getAuth();
 
   const handleUserTypeChange = (e) => {
-    setUserType(e.target.value);
+    const selectedUserType = e.target.value;
+    setUserType(selectedUserType);
+    if (selectedUserType === 'customer') {
+      // Clear checklist fields when selecting 'customer'
+      setAddress('');
+      setCity('');
+      setStartDate('');
+      setConfirmationPassword('');
+      setPassword('');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    if((userType === 'employee_office' || userType === 'field_worker')){
     if (!email || !password || !confirmationPassword || !userType || !name || !passportId || !phone) {
       setErrorMessage('Please fill in all fields.');
       return;
+    }
+  }
+ 
+    if((userType === 'customer')){
+    if (!email || !userType || !name || !passportId || !phone) {
+      setErrorMessage('Please fill in all fields.');
+      return;
+    }
     }
 
     if (!/\S+@\S+\.\S+/.test(email)) {
@@ -62,19 +79,24 @@ const SignUp = ({ open, onClose }) => {
       // Proceed with creating the user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-
-      const userData = {
-        name,
-        passportId,
-        phone,
-        email,
-        userType,
-        address,
-        city,
-        startDate,
-        endDate: '', // End date not shown in the form but will be stored in the database
-      };
-
+      // **Define userData Using Ternary Operator**
+    const userData = userType === 'customer' ? {
+      name,
+      passportId,
+      phone,
+      email,
+      userType,
+    } : {
+      name,
+      passportId,
+      phone,
+      email,
+      userType,
+      address,
+      city,
+      startDate,
+      endDate: '', // End date not shown in the form but will be stored in the database
+    };
       if (userType === 'customer') {
         await axios.post('http://localhost:8000/addCustomer', userData);
         alert('Customer successfully added!');
@@ -97,14 +119,20 @@ const SignUp = ({ open, onClose }) => {
       setErrorMessage('');
       onClose();
     } catch (error) {
-      console.error('Error adding user:', error);
-
+      console.error('Error adding :', error);
+    
       if (error.code === 'auth/email-already-in-use') {
         setErrorMessage('This email is already in use. Please use a different email address.');
+      } else if (error.response && error.response.data && error.response.data.message) {
+        // If backend sends a message field
+        setErrorMessage(error.response.data.message);
       } else {
         setErrorMessage('Error adding user. Please try again.');
       }
     }
+    
+    
+    
   };
 
   return (
@@ -160,7 +188,7 @@ const SignUp = ({ open, onClose }) => {
               style: { color: colors.grey[100] },
             }}
           />
-          <TextField
+           <TextField
             label="Email"
             variant="outlined"
             fullWidth
@@ -175,6 +203,23 @@ const SignUp = ({ open, onClose }) => {
               style: { color: colors.grey[100] },
             }}
           />
+          <Select
+            label="User Type"
+            value={userType}
+            onChange={handleUserTypeChange}
+            fullWidth
+            required
+            sx={{ mb: 2, color: colors.grey[100] }}
+            displayEmpty
+          >
+            <MenuItem value="" disabled>Select User Type</MenuItem>
+            <MenuItem value="customer">Customer</MenuItem>
+            <MenuItem value="employee_office">Employee Office</MenuItem>
+            <MenuItem value="field_worker">Field Worker</MenuItem>
+          </Select>
+          {(userType === 'employee_office' || userType === 'field_worker') && (
+            <>
+           
           <TextField
             label="Password"
             variant="outlined"
@@ -207,22 +252,6 @@ const SignUp = ({ open, onClose }) => {
               style: { color: colors.grey[100] },
             }}
           />
-          <Select
-            label="User Type"
-            value={userType}
-            onChange={handleUserTypeChange}
-            fullWidth
-            required
-            sx={{ mb: 2, color: colors.grey[100] }}
-            displayEmpty
-          >
-            <MenuItem value="" disabled>Select User Type</MenuItem>
-            <MenuItem value="customer">Customer</MenuItem>
-            <MenuItem value="employee_office">Employee Office</MenuItem>
-            <MenuItem value="field_worker">Field Worker</MenuItem>
-          </Select>
-          {(userType === 'employee_office' || userType === 'field_worker') && (
-            <>
               <TextField
                 label="Address"
                 variant="outlined"

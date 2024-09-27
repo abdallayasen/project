@@ -20,21 +20,16 @@ router.get('/getCustomer', async (req, res) => {
 
 router.post('/addCustomer', async (req, res) => {
   try {
-    const { name, passportId, phone, email, password, confirmationPassword } = req.body;
+    const { name, passportId, phone, email } = req.body;
 
-    if (!name || !passportId || !phone || !email || !password || !confirmationPassword) {
+    if (!name || !passportId || !phone || !email ) {
       return res.status(400).json({
         status: "FAILED",
         message: "Required fields are missing"
       });
     }
 
-    if (password !== confirmationPassword) {
-      return res.status(400).json({
-        status: "FAILED",
-        message: "Passwords do not match"
-      });
-    }
+    
 
     const customersRef = db.ref('customers');
     customersRef.orderByChild('email').equalTo(email).once('value', (snapshot) => {
@@ -54,7 +49,6 @@ router.post('/addCustomer', async (req, res) => {
           passportId,
           phone,
           email,
-          password,
           userType: 'customer' // Add the userType field here
         };
         newCustomerRef.set(newCustomer, (error) => {

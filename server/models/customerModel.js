@@ -6,7 +6,7 @@ const customerSchema = new mongoose.Schema({
   number: Number,
   name: String,
   phone: String,
-  postcode: Number,
+  passportId: Number,
   email: String,
 });
 
