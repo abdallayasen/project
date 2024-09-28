@@ -545,7 +545,7 @@ const MyWork = () => {
           }}
         >
           {/* Delete Button */}
-          <Box
+          {/* <Box
             sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
           >
             <IconButton
@@ -559,7 +559,7 @@ const MyWork = () => {
               <DeleteIcon />
             </IconButton>
             <Typography variant='caption'>Delete</Typography>
-          </Box>
+          </Box> */}
 
             {user.userType === 'manager' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
