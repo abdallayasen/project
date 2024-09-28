@@ -1111,7 +1111,7 @@ useEffect(() => {
           sx={{ 
             display: 'flex', 
             alignItems: 'center', 
-            justifyContent: 'center', 
+            justifyContent: 'flex-start', 
             height: '100%' ,
             color:"green"
           }}
@@ -1139,23 +1139,66 @@ useEffect(() => {
 
 
     {
+      // field: "action",
+      // headerName: "Action",
+      // flex: 7,
+      // renderCell: (params) => (
+      //   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+      //     {/* Delete Button */}
+      //     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      //       <IconButton
+      //         onClick={() => handleDeleteRow(params.row)}
+      //         color="warning"
+      //         disabled={user.userType === 'field_worker' || user.userType === 'employee_office'}
+      //       >
+      //         <DeleteIcon />
+      //       </IconButton>
+      //       <Typography variant="caption">Delete</Typography>
+      //     </Box>
+    
+      //     {/* Upload Button */}
+      //     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      //       <IconButton component="label" color="primary" disabled={!isUserResponsible(params.row)}>
+      //         <CloudUploadIcon sx={{ color: colors.grey[100] }} />
+      //         <input
+      //           type="file"
+      //           hidden
+      //           onChange={(event) => handleFileUpload(params.row.id, event)}
+      //         />
+      //       </IconButton>
+      //       <Typography variant="caption">Upload</Typography>
+      //     </Box>
+    
+      //     {/* Download All Files Button */}
+      //     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      //       <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
+      //         <DownloadIcon sx={{ color: colors.grey[100] }} />
+      //       </IconButton>
+      //       <Typography variant="caption">Download All</Typography>
+      //     </Box>
+      //   </Box>
+      // ),
+      // sortable: false,
+      // filterable: false,
+
       field: "action",
       headerName: "Action",
       flex: 7,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
           {/* Delete Button */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <IconButton
-              onClick={() => handleDeleteRow(params.row)}
-              color="warning"
-              disabled={user.userType === 'field_worker' || user.userType === 'employee_office'}
-            >
-              <DeleteIcon />
-            </IconButton>
-            <Typography variant="caption">Delete</Typography>
-          </Box>
-    
+          {!(user.userType === 'field_worker' || user.userType === 'employee_office') && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <IconButton
+                onClick={() => handleDeleteRow(params.row)}
+                color="warning"
+              >
+                <DeleteIcon />
+              </IconButton>
+              <Typography variant="caption">Delete</Typography>
+            </Box>
+          )}
+          
           {/* Upload Button */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <IconButton component="label" color="primary" disabled={!isUserResponsible(params.row)}>

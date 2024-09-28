@@ -508,7 +508,7 @@ const MyWork = () => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             height: '100%',
             color: 'green',
           }}
@@ -540,7 +540,7 @@ const MyWork = () => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             gap: 1,
           }}
         >

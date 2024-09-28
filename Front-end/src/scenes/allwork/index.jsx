@@ -243,7 +243,7 @@ const fetchFilesFromStorage = async (orderId) => {
       headerName: "Office Employee",
       flex: 4,
       renderCell: (params) => (
-        <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', height: '100%' }}>
           {params.value}
         </Typography>
       ),
@@ -253,7 +253,7 @@ const fetchFilesFromStorage = async (orderId) => {
       headerName: "Field Employee",
       flex: 4,
       renderCell: (params) => (
-        <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <Typography sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', height: '100%' }}>
           {params.value}
         </Typography>
       ),
@@ -280,7 +280,7 @@ const fetchFilesFromStorage = async (orderId) => {
           sx={{ 
             display: 'flex', 
             alignItems: 'flex-start', 
-            justifyContent: 'center', 
+            justifyContent: 'flex-start', 
             height: '100%' 
           }}
         >
@@ -298,7 +298,7 @@ const fetchFilesFromStorage = async (orderId) => {
       flex: 1.5,
       renderCell: (params) => (
         
-        <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'center', gap: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'left', justifyContent: 'flex-start', gap: 0 }}>
           <IconButton onClick={() => handleDownloadAllFiles(params.row.id)} color="primary">
             <DownloadIcon sx={{ color: colors.grey[100] }} />
           </IconButton>
