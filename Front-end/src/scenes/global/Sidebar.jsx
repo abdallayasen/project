@@ -8,7 +8,6 @@ import { tokens } from "../../theme";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
-import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import WorkIcon from "@mui/icons-material/Work";
 import WorkHistoryIcon from "@mui/icons-material/WorkHistory";
 import PreviewIcon from "@mui/icons-material/Preview";
@@ -19,6 +18,7 @@ import { UserContext } from '../../context/UserContext';
 import UserImage from '../../Assets/Icons/user2.png'; 
 import SignUp from '../../components/LoginPage/SignUp'; 
 import AddOrder from '../../scenes/orders/AddOrder';  // Import AddOrder component
+import AddCustomer from '../../components/LoginPage/AddCustomer';   // Import  component
 
 const Item = ({ title, to, icon, selected, setSelected, onClick }) => {
   const theme = useTheme();
@@ -48,6 +48,8 @@ const Sidebar = () => {
   const [selected, setSelected] = useState("Dashboard");
   const [isSignUpOpen, setSignUpOpen] = useState(false); 
   const [isAddOrderOpen, setAddOrderOpen] = useState(false);  // State for Add Order pop-up
+  const [isAddCustomerOpen, setAddCustomerOpen] = useState(false);  
+
   const { user } = useContext(UserContext); 
   const iconColor = colors.grey[100]; // or any color you prefer
 
@@ -65,6 +67,12 @@ const Sidebar = () => {
 
   const closeAddOrder = () => {
     setAddOrderOpen(false);
+  };
+  const openAddCustomer = () => {
+    setAddCustomerOpen(true);
+  };
+  const closeAddCustomer = () => {
+    setAddCustomerOpen(false);
   };
 
   return (
@@ -222,7 +230,8 @@ const Sidebar = () => {
                 />
               </>
             )}
-
+            {user?.userType === 'manager' && (
+<>
             <Typography
               variant="h6"
               color={colors.grey[300]}
@@ -237,7 +246,8 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
-
+            </>
+            )}
           
 
 
@@ -267,7 +277,17 @@ const Sidebar = () => {
                   style={{ color: colors.grey[100] }}
                 >
                   <Typography variant="h6">
-                  Registration
+                  Add User
+                  </Typography>
+                </MenuItem>
+
+                <MenuItem
+                  icon={<AddIcon />}
+                  onClick={openAddCustomer}  // Open  pop-up
+                  style={{ color: colors.grey[100] }}
+                >
+                  <Typography variant="h6">
+                  Add New Customer
                   </Typography>
                 </MenuItem>
               </>
@@ -287,6 +307,12 @@ const Sidebar = () => {
       <Dialog open={isAddOrderOpen} onClose={closeAddOrder} maxWidth="md" fullWidth>
         <DialogContent>
           <AddOrder onClose={closeAddOrder} />
+        </DialogContent>
+      </Dialog>
+
+       <Dialog open={isAddCustomerOpen} onClose={closeAddCustomer} maxWidth="md" fullWidth>
+        <DialogContent>
+          <AddCustomer onClose={closeAddCustomer} />
         </DialogContent>
       </Dialog>
     </Box>
