@@ -71,10 +71,14 @@ const LoginPage = () => {
           }
         } else {
           console.log('User found in Firebase Auth but not in Realtime Database');
+          alert('User found in Firebase Auth but not in Realtime Database');
+
         }
       })
       .catch((error) => {
         console.log('Invalid email or password:', error.message);
+        alert('Invalid email or password'); // Show alert on error
+
       });
   };
 
