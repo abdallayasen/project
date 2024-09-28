@@ -351,10 +351,10 @@ const fetchFilesFromStorage = async (orderId) => {
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { backgroundColor: '#04042c', color: '#ffffff', overflowY: 'auto' },
+          sx: { backgroundColor: colors.primary[400], color: 'black', overflowY: 'auto' },
         }}
       >
-        <DialogTitle>Comments</DialogTitle>
+        {/* <DialogTitle>POSTS</DialogTitle> */}
         <DialogContent sx={{ overflowY: 'auto', maxHeight: '70vh' }}>
           {selectedOrder && <Comments orderPrivateNumber={selectedOrder.orderPrivateNumber} />}
         </DialogContent>

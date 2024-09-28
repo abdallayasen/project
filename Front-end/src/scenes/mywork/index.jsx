@@ -37,7 +37,7 @@ const MyWork = () => {
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [postCounts, setPostCounts] = useState({});
   const statusColors = {
-    "Assigned": "grey",
+    "Assigned": "#2b62d8",
     "Processing": "#19b8ba", // Updated color
     "Revision": "#f58c0e",
     "Success": "#2c8826",    // Updated color
@@ -355,7 +355,7 @@ const MyWork = () => {
         const isDisabled = !(isAssignedFieldWorker || isManager);
     
         const statusColors = {
-          "Assigned": "grey",
+          "Assigned": "#2b62d8",
           "Processing": "#19b8ba", // Updated color
           "Revision": "#f58c0e",
           "Success": "#2c8826",    // Updated color
@@ -432,7 +432,7 @@ const MyWork = () => {
         const isDisabled = !(isAssignedOfficeEmployee || isManager);
     
         const statusColors = {
-          "Assigned": "grey",
+          "Assigned": "#2b62d8",
           "Processing": "#19b8ba", // Updated color
           "Revision": "#f58c0e",
           "Success": "#2c8826",    // Updated color
@@ -796,8 +796,8 @@ const MyWork = () => {
         fullWidth
         PaperProps={{
           sx: {
-            backgroundColor: '#04042c',
-            color: '#ffffff',
+            backgroundColor: colors.primary[400],
+            color: 'black',
             overflowY: 'auto',
           },
         }}

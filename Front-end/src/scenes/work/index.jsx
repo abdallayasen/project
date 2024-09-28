@@ -61,7 +61,7 @@ const newOrder = {
 };
 const statusColors = {
   "Not Assigned": "#ff0000",
-  "Assigned": "grey",
+  "Assigned": "#2b62d8",
   "Processing": "#19b8ba", // Updated color
   "Revision": "#f58c0e",
   "Success": "#2c8826",    // Updated color
@@ -818,10 +818,9 @@ useEffect(() => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: '100%',
-                    color: 'black', // Optional: color the message to indicate restriction
                   }}
                 >
-                  You cannot choose now
+                  Waiting for Field Completion
                 </Typography>
               );
             }
@@ -936,11 +935,11 @@ useEffect(() => {
         // **MODIFIED CODE END**
     
         const statusColors = {
-          "Assigned": "grey",
+          "Assigned": "#2b62d8",
           "Processing": "#19b8ba", // Updated color
           "Revision": "#f58c0e",
           "Success": "#2c8826",    // Updated color
-          "Not Assigned": "red",   // Color for "Not Assigned"
+          "Not Assigned": "#ff0000",   // Color for "Not Assigned"
         };
     
         // Define the statuses available to the user
@@ -1018,11 +1017,11 @@ useEffect(() => {
           !params.row.employeeOfficeName;
     
         const statusColors = {
-          "Assigned": "grey",
+          "Assigned": "#2b62d8",
           "Processing": "#19b8ba", // Updated color
           "Revision": "#f58c0e",
           "Success": "#2c8826",    // Updated color
-          "Not Assigned": "red",   // Color for "Not Assigned"
+          "Not Assigned": "#ff0000",   // Color for "Not Assigned"
         };
     
         // Define the statuses available to the user
@@ -1319,13 +1318,14 @@ useEffect(() => {
         fullWidth
         PaperProps={{
           sx: {
-            backgroundColor: '#04042c',
-            color: '#ffffff',
+            backgroundColor: colors.primary[400],
+            color: 'black',
             overflowY: 'auto',
+            
           },
         }}
       >
-        <DialogTitle>Comments</DialogTitle>
+        {/* <DialogTitle>POSTS</DialogTitle> */}
         <DialogContent
           sx={{
             overflowY: 'auto',
