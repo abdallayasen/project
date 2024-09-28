@@ -561,6 +561,15 @@ const MyWork = () => {
             <Typography variant='caption'>Delete</Typography>
           </Box>
 
+            {user.userType === 'manager' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <IconButton onClick={() => handleDeleteRow(params.row)} color="warning">
+                <DeleteIcon />
+              </IconButton>
+              <Typography variant="caption">Delete</Typography>
+            </Box>
+            )}
+
           {/* Upload Button */}
           <Box
             sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
@@ -596,10 +605,34 @@ const MyWork = () => {
     },
   ];
 
+  // const handleDownloadAllFiles = async (orderId) => {
+  //   const files = rows.find((row) => row.id === orderId)?.files || [];
+  //   for (const file of files) {
+  //     await handleFileDownload(file);
+  //   }
+  // };
+
   const handleDownloadAllFiles = async (orderId) => {
-    const files = rows.find((row) => row.id === orderId)?.files || [];
+    const files = rows.find(row => row.id === orderId)?.files || [];
+    if (files.length === 0) {
+      setSnackbarMessage("No files to download.");
+      setSnackbarOpen(true);
+      return;
+    }
+  
     for (const file of files) {
-      await handleFileDownload(file);
+      try {
+        const response = await fetch(file.url); // Fetch the file from the URL
+        const blob = await response.blob(); // Convert response to blob
+        const link = document.createElement('a'); // Create a link element
+        link.href = URL.createObjectURL(blob); // Create object URL from blob
+        link.download = file.name; // Set the download attribute with file name
+        link.click(); // Programmatically click the link to trigger download
+      } catch (error) {
+        console.error(`Error downloading file ${file.name}:`, error);
+        setSnackbarMessage(`Failed to download ${file.name}`);
+        setSnackbarOpen(true);
+      }
     }
   };
 
