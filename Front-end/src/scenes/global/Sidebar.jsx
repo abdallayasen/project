@@ -15,7 +15,7 @@ import AddIcon from "@mui/icons-material/Add";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import { UserContext } from '../../context/UserContext'; 
-import UserImage from '../../Assets/Icons/user2.png'; 
+import UserImage from '../../Assets/Icons/user.png'; 
 import SignUp from '../../components/LoginPage/SignUp'; 
 import AddOrder from '../../scenes/orders/AddOrder';  // Import AddOrder component
 import AddCustomer from '../../components/LoginPage/AddCustomer';   // Import  component
