@@ -55,6 +55,11 @@ const LoginPage = () => {
         const user = allUsers.find((u) => u.email === email);
 
         if (user) {
+          // Check if the user is blocked
+        if (user.blocked) {
+          alert('Your account has been blocked. Please contact support.');
+          return;
+        }
           setUser({ ...user, uid: firebaseUser.uid });
           switch (user.userType) {
             case 'manager':
