@@ -246,11 +246,11 @@ const Employee = () => {
 >
 <Button
   variant="contained"
-  color="primary"
+  color= "error"
   onClick={handleBlockEmployees}
   disabled={selectedEmployees.length === 0}  // Disable if no employees are selected
 
-  sx={{ mt: 2, color: 'white !important' }}  // Force text to always be white
+  sx={{ mt: 2, color: 'black !important' }}  // Force text to always be white
 >
   Block Selected Employee
 </Button>
@@ -260,7 +260,7 @@ const Employee = () => {
           color="secondary" // You can choose a different color for unblocking
           onClick={handleOpenUnblockDialog}
 
-          sx={{ mt: 2, ml: 2, color: 'white !important' }}
+          sx={{ mt: 2, ml: 2, color: 'black !important' }}
         >
           Unblock Selected Employee
         </Button>
