@@ -431,6 +431,7 @@ export default function UploadImageScreen({ route }: any) {
       <TouchableOpacity
         key={index}
         onLongPress={() => handlePdfLongPress(pdfUri)} // Long press to delete
+        onPress={() => downloadFile(pdfUri)} // Single press to download
       >
         <View style={styles.fileContainer}>
           <Ionicons name="document-text" size={50} color="red" />
@@ -441,6 +442,7 @@ export default function UploadImageScreen({ route }: any) {
   </View>
 </View>
 
+
 <View style={styles.section}>
   <Text style={styles.sectionTitle}>Text Files</Text>
   <View style={styles.line} />
@@ -449,6 +451,7 @@ export default function UploadImageScreen({ route }: any) {
       <TouchableOpacity
         key={index}
         onLongPress={() => handleTxtLongPress(txtUri)} // Long press to delete
+        onPress={() => downloadFile(txtUri)} // Single press to download
       >
         <View style={styles.fileContainer}>
           <FontAwesome name="file-text" size={50} color="blue" />
@@ -458,6 +461,7 @@ export default function UploadImageScreen({ route }: any) {
     ))}
   </View>
 </View>
+
       </ScrollView>
 
       {/* Modal for full-screen image swiping */}

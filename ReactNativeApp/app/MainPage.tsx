@@ -365,7 +365,7 @@ const showAlert = (title, message, onConfirm) => {
           onPress={() => navigation.navigate('UploadImage', { orderId: item.id })}
         >
           <Ionicons name="image" size={24} color="red" />
-          <Text style={styles.buttonText}>Upload Image</Text>
+          <Text style={styles.buttonText}>Uploads</Text>
         </TouchableOpacity>
 
         {/* Forum Button */}
@@ -412,6 +412,13 @@ const showAlert = (title, message, onConfirm) => {
           onPress={() => setFilter('Assigned')}
         >
           <Text style={styles.tabText}>Assigned</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, filter === 'Processing' && styles.activeTab]}
+          onPress={() => setFilter('Processing')}
+        >
+          <Text style={styles.tabText}>Processing</Text>
         </TouchableOpacity>
       </View>
 

@@ -366,9 +366,9 @@ export default function ForumScreen({ route }) {
         {/* <TouchableOpacity style={styles.photo}>
           <Ionicons name="camera" size={32} color="green" />
         </TouchableOpacity> */}
-        <TouchableOpacity style={styles.photo}>
+        {/* <TouchableOpacity style={styles.photo}>
           <Ionicons name="cloud-upload" size={32} color="red" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity onPress={handleAddPost} style={styles.addButtonforpost}>
           <Ionicons name="send" size={30} color="blue" />
           <Text style={styles.addButtonforpost}></Text>
